@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#562E8C" />
+<title>בודק הזכאות החכם · בואו נתחיל · הורה ומיוחד · מימושים</title>
+<meta name="description" content="בדיקה חכמה לזכויות וקצבאות לפי גיל: ילד נכה, נכה בוגר, סיעוד. סכומים עדכניים ל-2026." />
+<link rel="canonical" href="https://ho-me.org.il/router.html" />
+<meta name="robots" content="index,follow" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Rubik:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --brand-purple:#562E8C; --brand-purple-deep:#3F1F66; --brand-purple-light:#A78EC9;
+    --brand-purple-soft:#EDE5F5; --brand-teal:#1CA6A6; --brand-teal-soft:#D4EFF1;
+    --brand-orange:#EA6A4C; --brand-orange-soft:#FCE0D9; --brand-yellow:#FFD455;
+    --brand-yellow-soft:#FCF1CC; --green:#2D8F5F; --green-soft:#D8EDE0;
+    --ink:#1A1230; --ink-soft:#4A3D5C; --bg:#FAFAFA; --bg-2:#F4F0F8;
+    --white:#FFFFFF; --line:rgba(86,46,140,.12);
+    --shadow-lg:0 30px 60px -30px rgba(86,46,140,.4);
+    --shadow-md:0 14px 32px -16px rgba(86,46,140,.3);
+    --shadow-sm:0 6px 16px -8px rgba(86,46,140,.22);
+    --radius-lg:24px; --radius-md:16px; --radius-sm:12px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Heebo',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  .container{width:100%;max-width:780px;margin:0 auto;padding-inline:clamp(16px,4vw,32px)}
+  .app-header{background:var(--brand-purple);color:#fff;padding:14px 0;position:sticky;top:0;z-index:30;box-shadow:0 2px 12px rgba(86,46,140,.15)}
+  .app-header-inner{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .back-btn{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;display:grid;place-items:center;font-size:1.2rem;flex-shrink:0}
+  .app-title{font-family:'Rubik',sans-serif;font-weight:800;font-size:clamp(1rem,2.5vw,1.15rem);text-align:center;flex:1;color:#fff}
+  .app-title span{display:block;font-family:'Heebo';font-size:.7rem;font-weight:500;color:var(--brand-yellow);letter-spacing:.1em;margin-top:2px}
+  main{flex:1;padding:clamp(24px,5vw,48px) 0}
+  .intro-banner{background:linear-gradient(135deg,var(--brand-purple-soft),var(--brand-teal-soft));border-radius:var(--radius-lg);padding:24px;margin-bottom:24px;border-right:5px solid var(--brand-orange)}
+  .intro-banner h2{font-family:'Rubik',sans-serif;font-weight:800;color:var(--brand-purple);font-size:1.15rem;margin-bottom:10px}
+  .intro-banner p{color:var(--ink-soft);font-size:.92rem}
+  .card{background:var(--white);border-radius:var(--radius-lg);padding:clamp(24px,4vw,40px);box-shadow:var(--shadow-sm);margin-bottom:20px}
+  .question-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:var(--brand-purple-soft);font-size:.78rem;letter-spacing:.08em;color:var(--brand-purple);font-weight:700;margin-bottom:16px;text-transform:uppercase}
+  .question-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--brand-orange)}
+  .question-title{font-family:'Rubik',sans-serif;font-weight:800;font-size:clamp(1.4rem,4vw,2rem);line-height:1.15;margin-bottom:10px;color:var(--brand-purple)}
+  .question-help{color:var(--ink-soft);margin-bottom:24px}
+  .age-input{display:flex;align-items:center;justify-content:center;gap:14px;margin:24px 0}
+  .age-btn{width:54px;height:54px;border-radius:50%;background:var(--brand-purple-soft);color:var(--brand-purple);font-size:1.5rem;font-weight:700;transition:all .2s}
+  .age-btn:hover{background:var(--brand-purple);color:#fff;transform:scale(1.05)}
+  .age-btn:disabled{opacity:.4;cursor:not-allowed}
+  .age-display{font-family:'Rubik',sans-serif;font-weight:900;font-size:clamp(2.5rem,8vw,4rem);color:var(--brand-purple);min-width:120px;text-align:center;line-height:1}
+  .age-display small{font-size:.4em;display:block;color:var(--ink-soft);font-family:'Heebo';font-weight:500;margin-top:6px}
+  .age-quick{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
+  .age-quick button{padding:8px 16px;border-radius:999px;background:var(--brand-purple-soft);color:var(--brand-purple);font-weight:600;font-size:.85rem;transition:all .2s}
+  .age-quick button:hover{background:var(--brand-purple);color:#fff}
+  .options{display:grid;gap:12px;grid-template-columns:1fr 1fr;margin-bottom:24px}
+  @media (max-width:480px){.options{grid-template-columns:1fr}}
+  .option{display:flex;align-items:center;gap:14px;padding:18px 20px;background:var(--bg);border:2px solid var(--line);border-radius:var(--radius-md);text-align:right;width:100%;font-size:1rem;font-weight:500;color:var(--ink);transition:all .25s;min-height:64px}
+  .option:hover{border-color:var(--brand-purple-light);background:#fff}
+  .option.selected{border-color:var(--brand-orange);background:#fff;box-shadow:0 0 0 3px rgba(234,106,76,.15)}
+  .option .check{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex-shrink:0}
+  .option.selected .check{background:var(--brand-orange);border-color:var(--brand-orange)}
+  .option.selected .check::after{content:"✓";color:#fff;font-weight:900}
+  .option .opt-icon{font-size:1.6rem}
+  .option .opt-label{flex:1}
+  .option .opt-label strong{display:block;font-weight:700}
+  .option .opt-label span{display:block;font-size:.82rem;color:var(--ink-soft);font-weight:400;margin-top:2px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 28px;border-radius:999px;font-weight:700;font-size:.95rem;transition:all .25s;width:100%;min-height:52px}
+  .btn-primary{background:var(--brand-purple);color:#fff;box-shadow:var(--shadow-sm)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);background:var(--brand-purple-deep)}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .disclaimer{text-align:center;margin-top:24px;padding:14px;color:var(--ink-soft);font-size:.78rem;background:var(--brand-purple-soft);border-radius:var(--radius-sm);line-height:1.5}
+  .preview-msg{background:var(--brand-yellow-soft);border-radius:var(--radius-md);padding:14px 18px;margin-bottom:18px;font-size:.9rem;color:var(--ink);border-right:4px solid var(--brand-yellow);display:none}
+  .preview-msg.show{display:block;animation:slideIn .3s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  .preview-msg strong{color:var(--brand-purple)}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="container app-header-inner">
+    <a href="index.html" class="back-btn" aria-label="חזור לאתר">→</a>
+    <div class="app-title">
+      בודק הזכאות החכם
+      <span>בואו נתחיל · הורה ומיוחד · 2026</span>
+    </div>
+    <div style="width:42px"></div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <div class="intro-banner">
+      <h2>👋 שלום! בואו נמצא את המחשבון המתאים עבורכם</h2>
+      <p>שלוש שאלות קצרות ונפנה אתכם לבודק הזכאות המתאים — לפי גיל ומאפיינים. ההפרדה חשובה כי כל קבוצת גיל זכאית לזכויות שונות.</p>
+    </div>
+
+    <div class="card">
+      <div class="question-eyebrow">שאלה 1</div>
+      <h2 class="question-title">בן/בת כמה האדם שעבורו מתבצעת הבדיקה?</h2>
+      <p class="question-help">ניתן ללחוץ על אחת הקטגוריות במהירות, או לכוון במדויק.</p>
+
+      <div class="age-quick">
+        <button data-age="3">פעוט (3)</button>
+        <button data-age="10">ילד (10)</button>
+        <button data-age="16">נער (16)</button>
+        <button data-age="30">בוגר (30)</button>
+        <button data-age="55">מבוגר (55)</button>
+        <button data-age="70">פנסיונר (70)</button>
+      </div>
+
+      <div class="age-input">
+        <button class="age-btn" id="ageMinus" aria-label="פחות">−</button>
+        <div class="age-display">
+          <span id="ageVal">25</span>
+          <small id="ageLbl">שנים</small>
+        </div>
+        <button class="age-btn" id="agePlus" aria-label="יותר">+</button>
+      </div>
+
+      <div id="genderSection" style="display:none">
+        <h3 style="font-family:'Rubik',sans-serif;font-weight:700;color:var(--brand-purple);font-size:1.05rem;margin-bottom:12px;margin-top:8px">שאלה 2: מגדר</h3>
+        <p class="question-help">חשוב לקביעת גיל פרישה (זכר 67 / נקבה 62).</p>
+        <div class="options">
+          <button class="option" data-gender="male">
+            <div class="check"></div><div class="opt-icon">👨</div>
+            <div class="opt-label"><strong>זכר</strong><span>גיל פרישה: 67</span></div>
+          </button>
+          <button class="option" data-gender="female">
+            <div class="check"></div><div class="opt-icon">👩</div>
+            <div class="opt-label"><strong>נקבה</strong><span>גיל פרישה: 62-65</span></div>
+          </button>
+        </div>
+      </div>
+
+      <div class="preview-msg" id="previewMsg"></div>
+
+      <button class="btn btn-primary" id="continueBtn" disabled>המשך לבודק המתאים ←</button>
+    </div>
+
+    <p class="disclaimer">
+      🔒 הבדיקה אנונימית · ללא רישום · התשובה היא אומדן ראשוני בלבד ואינה מחליפה ייעוץ מקצועי. <strong>ט.ל.ח</strong>
+    </p>
+  </div>
+</main>
+
+<script>
+  const state = { age: 25, gender: null };
+  const ageVal = document.getElementById('ageVal');
+  const ageLbl = document.getElementById('ageLbl');
+  const minus = document.getElementById('ageMinus');
+  const plus = document.getElementById('agePlus');
+  const genderSection = document.getElementById('genderSection');
+  const previewMsg = document.getElementById('previewMsg');
+  const continueBtn = document.getElementById('continueBtn');
+
+  function getRoute(age, gender){
+    if(age <= 17) return { file:'app.html', label:'מחשבון ילד נכה (עד גיל 18)', icon:'🧒' };
+    // Female retirement: 62 (rising to 65). Male: 67.
+    const retirementAge = gender === 'female' ? 62 : 67;
+    if(age >= 60 && !gender) return { needGender:true };
+    if(age >= retirementAge) return { file:'siud-app.html', label:'מחשבון סיעוד (גיל פנסיה ומעלה)', icon:'👵' };
+    return { file:'bogrim-app.html', label:'מחשבון נכה בוגר (18 עד גיל פרישה)', icon:'👨‍🦽' };
+  }
+
+  function update(){
+    ageVal.textContent = state.age;
+    ageLbl.textContent = state.age === 1 ? 'שנה' : 'שנים';
+    minus.disabled = state.age <= 0;
+    plus.disabled = state.age >= 120;
+
+    genderSection.style.display = state.age >= 60 ? 'block' : 'none';
+    if(state.age < 60) state.gender = null;
+
+    document.querySelectorAll('[data-gender]').forEach(b => b.classList.toggle('selected', b.dataset.gender === state.gender));
+
+    const route = getRoute(state.age, state.gender);
+    if(route.needGender){
+      previewMsg.classList.add('show');
+      previewMsg.innerHTML = '👈 בחר/י מגדר כדי להמשיך';
+      continueBtn.disabled = true;
+    } else if(route.file){
+      previewMsg.classList.add('show');
+      previewMsg.innerHTML = `${route.icon} בהמשך תעבור/י ל-<strong>${route.label}</strong>`;
+      continueBtn.disabled = false;
+    }
+  }
+
+  minus.addEventListener('click', () => { if(state.age > 0){ state.age--; update(); }});
+  plus.addEventListener('click', () => { if(state.age < 120){ state.age++; update(); }});
+  document.querySelectorAll('[data-age]').forEach(b => b.addEventListener('click', () => {
+    state.age = parseInt(b.dataset.age, 10);
+    update();
+  }));
+  document.querySelectorAll('[data-gender]').forEach(b => b.addEventListener('click', () => {
+    state.gender = b.dataset.gender;
+    update();
+  }));
+
+  continueBtn.addEventListener('click', () => {
+    const route = getRoute(state.age, state.gender);
+    if(!route.file) return;
+    try {
+      sessionStorage.setItem('routerData', JSON.stringify({ age: state.age, gender: state.gender }));
+    } catch(e){}
+    window.location.href = route.file;
+  });
+
+  update();
+</script>
+
+<!-- ============== ACCESSIBILITY WIDGET (shared) ============== -->
+<style>
+  .a11y-fab{position:fixed;bottom:20px;right:20px;z-index:9998;width:58px;height:58px;border-radius:50%;background:#1559a8;color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px -6px rgba(0,0,0,.4);font-size:1.8rem;cursor:pointer;border:3px solid #fff}
+  .a11y-fab:hover{transform:scale(1.08)}
+  .a11y-panel{position:fixed;top:0;right:-380px;width:360px;max-width:92vw;height:100vh;background:#fff;z-index:9999;box-shadow:-10px 0 40px -10px rgba(0,0,0,.3);transition:right .35s ease;overflow-y:auto;font-family:'Heebo',sans-serif;direction:rtl}
+  .a11y-panel.open{right:0}
+  .a11y-panel-head{background:#1559a8;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:2}
+  .a11y-panel-head h3{font-size:1.1rem;font-weight:800;margin:0}
+  .a11y-close{background:rgba(255,255,255,.2);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:1.2rem;cursor:pointer}
+  .a11y-body{padding:18px 16px}
+  .a11y-group{margin-bottom:18px}
+  .a11y-group-title{font-size:.78rem;font-weight:800;color:#555;margin-bottom:8px;text-transform:uppercase}
+  .a11y-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .a11y-btn{padding:10px 8px;border:2px solid #ddd;background:#f8f8f8;border-radius:10px;cursor:pointer;font-family:inherit;font-size:.82rem;font-weight:600;color:#222;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .a11y-btn.active{border-color:#1559a8;background:#e6efff;color:#1559a8}
+  .a11y-btn .ico{font-size:1.2rem}
+  .a11y-reset{width:100%;padding:12px;background:#dc3545;color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:10px}
+  .a11y-statement{background:#f0f4f9;border-radius:10px;padding:12px 14px;font-size:.78rem;line-height:1.6;color:#444;margin-top:12px}
+  .a11y-statement a{color:#1559a8;font-weight:700}
+  html.a11y-font-lg{font-size:115%}
+  html.a11y-font-xl{font-size:130%}
+  body.a11y-contrast > :not(.a11y-fab):not(.a11y-panel){filter:contrast(1.4)!important}
+  body.a11y-dark > :not(.a11y-fab):not(.a11y-panel){filter:invert(1) hue-rotate(180deg)!important}
+  body.a11y-dark > :not(.a11y-fab):not(.a11y-panel) img,body.a11y-dark > :not(.a11y-fab):not(.a11y-panel) svg{filter:invert(1) hue-rotate(180deg)}
+  body.a11y-mono > :not(.a11y-fab):not(.a11y-panel){filter:grayscale(1)!important}
+  body.a11y-links a{text-decoration:underline!important;outline:1px dashed currentColor;outline-offset:2px}
+  body.a11y-readable,body.a11y-readable *{font-family:Arial,sans-serif!important;letter-spacing:.02em}
+  body.a11y-spacing,body.a11y-spacing *{line-height:1.9!important;word-spacing:.15em}
+  body.a11y-noanim,body.a11y-noanim *{animation:none!important;transition:none!important}
+  body.a11y-bigcursor,body.a11y-bigcursor *{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><path d="M2 2l14 36 6-16 16-6z" fill="black" stroke="white" stroke-width="3"/></svg>') 4 4,auto!important}
+</style>
+<button class="a11y-fab" id="a11yFab" aria-label="פתח תפריט נגישות">♿</button>
+<aside class="a11y-panel" id="a11yPanel" role="dialog" aria-label="הגדרות נגישות" aria-hidden="true">
+  <div class="a11y-panel-head"><h3>♿ הגדרות נגישות</h3><button class="a11y-close" id="a11yClose" aria-label="סגור">✕</button></div>
+  <div class="a11y-body">
+    <div class="a11y-group"><div class="a11y-group-title">🔍 גודל טקסט</div><div class="a11y-btns" style="grid-template-columns:1fr 1fr 1fr">
+      <button class="a11y-btn" data-toggle="font" data-val="normal"><span class="ico">A</span><span>רגיל</span></button>
+      <button class="a11y-btn" data-toggle="font" data-val="lg"><span class="ico">A+</span><span>גדול</span></button>
+      <button class="a11y-btn" data-toggle="font" data-val="xl"><span class="ico">A++</span><span>ענק</span></button>
+    </div></div>
+    <div class="a11y-group"><div class="a11y-group-title">🎨 ניגודיות וצבע</div><div class="a11y-btns">
+      <button class="a11y-btn" data-toggle="contrast"><span class="ico">⚡</span><span>ניגודיות גבוהה</span></button>
+      <button class="a11y-btn" data-toggle="dark"><span class="ico">🌙</span><span>מצב כהה</span></button>
+      <button class="a11y-btn" data-toggle="mono"><span class="ico">⚫</span><span>שחור-לבן</span></button>
+      <button class="a11y-btn" data-toggle="links"><span class="ico">🔗</span><span>הדגשת קישורים</span></button>
+    </div></div>
+    <div class="a11y-group"><div class="a11y-group-title">📖 קריאות</div><div class="a11y-btns">
+      <button class="a11y-btn" data-toggle="readable"><span class="ico">🔤</span><span>גופן קריא</span></button>
+      <button class="a11y-btn" data-toggle="spacing"><span class="ico">📐</span><span>ריווח שורות</span></button>
+      <button class="a11y-btn" data-toggle="noanim"><span class="ico">🛑</span><span>עצירת אנימציות</span></button>
+      <button class="a11y-btn" data-toggle="bigcursor"><span class="ico">🖱️</span><span>סמן גדול</span></button>
+    </div></div>
+    <button class="a11y-reset" id="a11yReset">🔙 איפוס כל ההגדרות</button>
+    <div class="a11y-statement"><strong>הצהרת נגישות:</strong> אתר זה הונגש לפי תקן ישראלי 5568 (WCAG 2.1 AA). רכז נגישות: יהודה איינהורן · <a href="tel:02-5023456">02-5023456</a> · <a href="mailto:o@ho-me.org.il">o@ho-me.org.il</a></div>
+  </div>
+</aside>
+<script>
+(function(){
+  const fab=document.getElementById('a11yFab'),panel=document.getElementById('a11yPanel'),close=document.getElementById('a11yClose'),reset=document.getElementById('a11yReset');
+  const TOGGLES=['contrast','dark','mono','links','readable','spacing','noanim','bigcursor'];
+  const FONT_SIZES=['normal','lg','xl'];
+  function apply(){const s=JSON.parse(localStorage.getItem('a11y')||'{}');TOGGLES.forEach(t=>document.body.classList.toggle('a11y-'+t,!!s[t]));FONT_SIZES.forEach(f=>document.documentElement.classList.toggle('a11y-font-'+f,s.font===f));document.querySelectorAll('.a11y-btn').forEach(b=>{const t=b.dataset.toggle,v=b.dataset.val;if(t==='font')b.classList.toggle('active',s.font===v||(!s.font&&v==='normal'));else b.classList.toggle('active',!!s[t]);});}
+  fab.addEventListener('click',()=>{panel.classList.add('open');panel.setAttribute('aria-hidden','false');});
+  close.addEventListener('click',()=>{panel.classList.remove('open');panel.setAttribute('aria-hidden','true');});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&panel.classList.contains('open')){panel.classList.remove('open');}});
+  document.querySelectorAll('.a11y-btn').forEach(b=>b.addEventListener('click',()=>{const s=JSON.parse(localStorage.getItem('a11y')||'{}');const t=b.dataset.toggle,v=b.dataset.val;if(t==='font')s.font=v;else s[t]=!s[t];localStorage.setItem('a11y',JSON.stringify(s));apply();}));
+  reset.addEventListener('click',()=>{localStorage.removeItem('a11y');apply();});
+  apply();
+})();
+</script>
+</body>
+</html>

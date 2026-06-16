@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#562E8C" />
+<title>בודק זכאות לסיעוד · גיל פנסיה · הורה ומיוחד · מימושים</title>
+<meta name="description" content="בודק זכאות לקצבת סיעוד וזכויות נוספות לפנסיונרים — לפי רמת תלות, הכנסות ומגדר. סכומים עדכניים לפי ביטוח לאומי 2026." />
+<link rel="canonical" href="https://ho-me.org.il/siud-app.html" />
+<meta name="robots" content="index,follow" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Rubik:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --brand-purple:#562E8C; --brand-purple-deep:#3F1F66; --brand-purple-light:#A78EC9;
+    --brand-purple-soft:#EDE5F5; --brand-teal:#1CA6A6; --brand-teal-soft:#D4EFF1;
+    --brand-orange:#EA6A4C; --brand-orange-soft:#FCE0D9; --brand-yellow:#FFD455;
+    --brand-yellow-soft:#FCF1CC; --green:#2D8F5F; --green-soft:#D8EDE0;
+    --ink:#1A1230; --ink-soft:#4A3D5C; --bg:#FAFAFA; --bg-2:#F4F0F8;
+    --white:#FFFFFF; --line:rgba(86,46,140,.12);
+    --shadow-lg:0 30px 60px -30px rgba(86,46,140,.4);
+    --shadow-md:0 14px 32px -16px rgba(86,46,140,.3);
+    --shadow-sm:0 6px 16px -8px rgba(86,46,140,.22);
+    --radius-lg:24px; --radius-md:16px; --radius-sm:12px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Heebo',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.65;min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+  .container{width:100%;max-width:780px;margin:0 auto;padding-inline:clamp(16px,4vw,32px)}
+  .app-header{background:var(--brand-purple);color:#fff;padding:14px 0;position:sticky;top:0;z-index:30;box-shadow:0 2px 12px rgba(86,46,140,.15)}
+  .app-header-inner{display:flex;align-items:center;justify-content:space-between;gap:14px}
+  .back-btn{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);color:#fff;display:grid;place-items:center;font-size:1.2rem;flex-shrink:0}
+  .app-title{font-family:'Rubik',sans-serif;font-weight:800;font-size:clamp(1rem,2.5vw,1.15rem);text-align:center;flex:1;color:#fff}
+  .app-title span{display:block;font-family:'Heebo';font-size:.7rem;font-weight:500;color:var(--brand-yellow);letter-spacing:.1em;margin-top:2px}
+  main{flex:1;padding:clamp(24px,5vw,48px) 0}
+  .progress-wrap{margin-bottom:32px}
+  .progress-info{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:.85rem;font-weight:600}
+  .progress-info .step-num{color:var(--brand-purple)}
+  .progress-info .step-percent{color:var(--ink-soft)}
+  .progress-bar{height:8px;background:var(--brand-purple-soft);border-radius:999px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--brand-yellow),var(--brand-orange));border-radius:999px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+  .card{background:var(--white);border-radius:var(--radius-lg);padding:clamp(24px,4vw,40px);box-shadow:var(--shadow-sm);animation:slideIn .4s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+  .question-eyebrow{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:var(--brand-purple-soft);font-size:.78rem;letter-spacing:.08em;color:var(--brand-purple);font-weight:700;margin-bottom:18px;text-transform:uppercase}
+  .question-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--brand-orange)}
+  .question-title{font-family:'Rubik',sans-serif;font-weight:800;font-size:clamp(1.5rem,4vw,2.1rem);line-height:1.15;margin-bottom:12px;color:var(--brand-purple)}
+  .question-help{color:var(--ink-soft);font-size:1rem;margin-bottom:28px}
+  .options{display:grid;gap:12px;margin-bottom:24px}
+  .option{display:flex;align-items:center;gap:14px;padding:18px 20px;background:var(--bg);border:2px solid var(--line);border-radius:var(--radius-md);text-align:right;width:100%;font-size:1rem;font-weight:500;color:var(--ink);transition:all .25s;min-height:64px}
+  .option:hover{border-color:var(--brand-purple-light);background:#fff;transform:translateX(-3px)}
+  .option.selected{border-color:var(--brand-orange);background:#fff;box-shadow:0 0 0 3px rgba(234,106,76,.15)}
+  .option .check{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;flex-shrink:0}
+  .option.selected .check{background:var(--brand-orange);border-color:var(--brand-orange)}
+  .option.selected .check::after{content:"✓";color:#fff;font-weight:900;font-size:.9rem}
+  .option .opt-icon{font-size:1.4rem;flex-shrink:0}
+  .option .opt-label{flex:1}
+  .option .opt-label strong{display:block;font-weight:700}
+  .option .opt-label span{display:block;font-size:.82rem;color:var(--ink-soft);font-weight:400;margin-top:2px}
+  .age-input{display:flex;align-items:center;justify-content:center;gap:14px;margin:30px 0 24px}
+  .age-btn{width:54px;height:54px;border-radius:50%;background:var(--brand-purple-soft);color:var(--brand-purple);font-size:1.5rem;font-weight:700;transition:all .2s}
+  .age-btn:hover{background:var(--brand-purple);color:#fff;transform:scale(1.05)}
+  .age-btn:disabled{opacity:.4;cursor:not-allowed}
+  .age-display{font-family:'Rubik',sans-serif;font-weight:900;font-size:clamp(2.5rem,8vw,4rem);color:var(--brand-purple);min-width:120px;text-align:center;line-height:1}
+  .age-display small{font-size:.4em;display:block;color:var(--ink-soft);font-family:'Heebo';font-weight:500;margin-top:6px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:14px 28px;border-radius:999px;font-weight:700;font-size:.95rem;transition:all .25s;white-space:nowrap;min-height:52px;flex:1}
+  .btn-primary{background:var(--brand-purple);color:#fff;box-shadow:var(--shadow-sm)}
+  .btn-primary:hover{transform:translateY(-2px);background:var(--brand-purple-deep)}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .btn-ghost{background:transparent;color:var(--brand-purple);border:2px solid var(--brand-purple);flex:0 0 auto;min-width:120px}
+  .btn-ghost:hover{background:var(--brand-purple);color:#fff}
+  .results-header{text-align:center;margin-bottom:32px}
+  .results-badge{display:inline-flex;align-items:center;gap:10px;padding:8px 20px;border-radius:999px;background:var(--green);color:#fff;font-weight:700;font-size:.9rem;margin-bottom:18px}
+  .results-badge::before{content:"✓";font-size:1.1rem}
+  .results-title{font-family:'Rubik',sans-serif;font-weight:900;font-size:clamp(1.8rem,5vw,2.6rem);line-height:1.1;margin-bottom:12px;color:var(--brand-purple)}
+  .results-title em{font-style:normal;color:var(--brand-orange)}
+  .results-sub{color:var(--ink-soft);font-size:1.05rem;max-width:520px;margin:0 auto}
+  .summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:30px}
+  @media (max-width:480px){.summary{grid-template-columns:1fr 1fr 1fr;gap:8px}}
+  .summary-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius-md);padding:18px 12px;text-align:center}
+  .summary-card.high{border-top:4px solid var(--green)}
+  .summary-card.medium{border-top:4px solid var(--brand-yellow)}
+  .summary-card.low{border-top:4px solid var(--brand-purple-light)}
+  .summary-card strong{display:block;font-family:'Rubik',sans-serif;font-size:clamp(1.6rem,4vw,2.2rem);font-weight:900;color:var(--brand-purple);line-height:1}
+  .summary-card span{font-size:.78rem;color:var(--ink-soft);display:block;margin-top:4px;font-weight:600}
+  .results-list{display:grid;gap:14px;margin-bottom:32px}
+  .result-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius-md);padding:22px;border-right:5px solid var(--brand-yellow)}
+  .result-card.high{border-right-color:var(--green)}
+  .result-card.medium{border-right-color:var(--brand-yellow)}
+  .result-card.low{border-right-color:var(--brand-purple-light);opacity:.85}
+  .result-head{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px}
+  .result-icon{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;font-size:1.4rem;flex-shrink:0;color:#fff}
+  .result-card.high .result-icon{background:var(--green)}
+  .result-card.medium .result-icon{background:var(--brand-yellow);color:var(--ink)}
+  .result-card.low .result-icon{background:var(--brand-purple-light)}
+  .result-info{flex:1;min-width:0}
+  .result-info h3{font-family:'Rubik',sans-serif;font-weight:800;font-size:1.2rem;margin-bottom:4px;color:var(--ink)}
+  .result-likelihood{display:inline-block;font-size:.75rem;font-weight:700;padding:3px 10px;border-radius:999px}
+  .likelihood-high{background:var(--green-soft);color:var(--green)}
+  .likelihood-medium{background:var(--brand-yellow-soft);color:#7a5520}
+  .likelihood-low{background:var(--brand-purple-soft);color:var(--brand-purple)}
+  .result-amount{display:inline-block;background:var(--brand-purple);color:#fff;padding:6px 14px;border-radius:8px;font-family:'Rubik',sans-serif;font-weight:700;font-size:.92rem;margin-top:8px}
+  .result-card.high .result-amount{background:var(--green)}
+  .result-amount small{font-size:.7em;font-weight:500;opacity:.85}
+  .result-desc{color:var(--ink-soft);font-size:.92rem;margin-bottom:14px;margin-top:8px}
+  .result-steps{background:var(--bg);border-radius:var(--radius-sm);padding:14px 16px}
+  .result-steps strong{display:block;font-size:.78rem;color:var(--brand-purple);font-weight:700;margin-bottom:8px;text-transform:uppercase}
+  .result-steps ul{list-style:none;display:grid;gap:6px}
+  .result-steps li{font-size:.88rem;display:flex;gap:8px;align-items:flex-start;color:var(--ink-soft)}
+  .result-steps li::before{content:"→";color:var(--brand-orange);font-weight:900;flex-shrink:0}
+  .cta-block{background:linear-gradient(135deg,var(--brand-purple),var(--brand-purple-deep));color:#fff;border-radius:var(--radius-lg);padding:clamp(28px,4vw,40px);text-align:center;position:relative;overflow:hidden}
+  .cta-block::before{content:"";position:absolute;top:-50%;right:-30%;width:80%;height:200%;background:radial-gradient(circle,rgba(255,212,85,.2),transparent 60%);pointer-events:none}
+  .cta-block h3{font-family:'Rubik',sans-serif;font-weight:900;font-size:clamp(1.3rem,3.5vw,1.8rem);margin-bottom:10px;position:relative;color:#fff}
+  .cta-block p{color:rgba(255,255,255,.85);margin-bottom:20px;position:relative;font-size:.95rem}
+  .lead-form{position:relative;background:rgba(255,255,255,.08);border-radius:var(--radius-md);padding:18px;margin-bottom:18px;text-align:right;backdrop-filter:blur(4px)}
+  .lead-form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  @media (max-width:480px){.lead-form-row{grid-template-columns:1fr}}
+  .lead-form input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.95);color:var(--ink);font-family:inherit;font-size:.95rem}
+  .lead-form input:focus{outline:2px solid var(--brand-yellow);outline-offset:2px}
+  .lead-form label{display:flex;align-items:flex-start;gap:8px;font-size:.82rem;color:rgba(255,255,255,.9);margin-top:8px;text-align:right;line-height:1.5;cursor:pointer}
+  .lead-form input[type=checkbox]{width:auto;margin-top:3px}
+  /* CTA: 2 כפתורי-על שווי-רוחב + "בדוק שוב" קטן ממורכז */
+  .cta-block .actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;position:relative}
+  .cta-block .actions .btn{width:100%;text-align:center;font-size:.95rem;padding:16px 22px;line-height:1.3;white-space:normal}
+  .cta-block .actions .btn-ghost{grid-column:1 / -1;justify-self:center;min-width:180px;max-width:260px;width:auto;font-size:.85rem;padding:10px 24px;margin-top:4px}
+  @media (max-width:640px){
+    .cta-block .actions{grid-template-columns:1fr;gap:10px}
+    .cta-block .actions .btn-ghost{grid-column:auto;width:100%;max-width:none}
+  }
+  .cta-block .btn-primary{background:var(--brand-yellow);color:var(--ink)}
+  .cta-block .btn-primary:hover{background:#fff}
+  .cta-block .btn-ghost{color:#fff;border-color:rgba(255,255,255,.4)}
+  .cta-block .btn-ghost:hover{background:#fff;color:var(--brand-purple)}
+  .cta-block .disclaimer{background:transparent;color:rgba(255,255,255,.85);margin-top:16px;padding:8px 0;border-radius:0;font-size:.78rem}
+  .cta-block .disclaimer a{color:var(--brand-yellow);text-decoration:underline}
+  .cta-block .disclaimer strong{color:#fff}
+  .disclaimer{text-align:center;margin-top:24px;padding:16px;color:var(--ink-soft);font-size:.78rem;background:var(--brand-purple-soft);border-radius:var(--radius-sm);line-height:1.65}
+  .disclaimer-full{text-align:right;padding:18px;background:#FFF5E1;border:1px solid #FFD455;border-radius:var(--radius-md);font-size:.78rem;line-height:1.7;color:var(--ink-soft);margin-top:18px}
+  .disclaimer-full strong{color:var(--brand-orange);display:block;margin-bottom:6px;font-size:.88rem}
+  .intro-banner{background:linear-gradient(135deg,var(--brand-purple-soft),var(--brand-teal-soft));border-radius:var(--radius-lg);padding:20px 22px;margin-bottom:24px;border-right:5px solid var(--brand-orange)}
+  .intro-banner h2{font-family:'Rubik',sans-serif;font-weight:800;color:var(--brand-purple);font-size:1.05rem;margin-bottom:10px}
+  .intro-banner p{color:var(--ink-soft);font-size:.88rem;margin-bottom:6px}
+  .cat-section{margin-bottom:24px}
+  .cat-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 14px;border-radius:var(--radius-md);background:var(--brand-purple-soft);border-right:4px solid var(--brand-purple)}
+  .cat-header .ch-icon{font-size:1.3rem}
+  .cat-header .ch-title{font-family:'Rubik',sans-serif;font-weight:800;color:var(--ink);font-size:.98rem;flex:1}
+  .cat-header .ch-count{font-size:.78rem;color:var(--ink-soft);font-weight:700;background:#fff;padding:3px 10px;border-radius:999px}
+  @media (min-width:640px){.options.cols-2{grid-template-columns:1fr 1fr}.actions{flex-wrap:nowrap}}
+  @media (max-width:480px){.options.cols-2{grid-template-columns:1fr}.btn-ghost{min-width:auto;padding:14px 20px}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="container app-header-inner">
+    <a href="router.html" class="back-btn" aria-label="חזור">→</a>
+    <div class="app-title">
+      בודק זכאות לסיעוד
+      <span>גיל פנסיה · הורה ומיוחד · 2026</span>
+    </div>
+    <div style="width:42px"></div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+    <div id="app"></div>
+  </div>
+</main>
+
+<script>
+  // נתוני סיעוד 2026 — מבוסס על btl.gov.il/benefits/long_term_care_insurance
+  // נדרש אימות תקופתי מול האתר הרשמי. ט.ל.ח.
+  const router = (() => { try { return JSON.parse(sessionStorage.getItem('routerData')||'{}'); } catch(e){ return {}; }})();
+
+  const QUESTIONS = [
+    {
+      id:'gender',
+      eyebrow:'שלב 1',
+      title:'מגדר',
+      help:'משפיע על קביעת גיל פרישה ועל זכאות לסיעוד.',
+      type:'select',
+      skipIf: a => !!a.gender,
+      options:[
+        {v:'male', icon:'👨', label:'זכר', desc:'גיל פרישה: 67'},
+        {v:'female', icon:'👩', label:'נקבה', desc:'גיל פרישה: 62-65'},
+      ]
+    },
+    {
+      id:'age',
+      eyebrow:'שלב 2',
+      title:'גיל',
+      help:'קצבת סיעוד ניתנת בגיל פרישה ומעלה.',
+      type:'age',
+      skipIf: a => !!a.age,
+    },
+    {
+      id:'marital',
+      eyebrow:'שלב 3',
+      title:'מצב משפחתי',
+      help:'משפיע על תקרת ההכנסות לזכאות.',
+      type:'select',
+      options:[
+        {v:'single', icon:'👤', label:'יחיד/ה', desc:'תקרה: 10,551 ₪ ברוטו'},
+        {v:'couple', icon:'👥', label:'נשוי/אה', desc:'תקרה לבני זוג: 15,827 ₪'},
+        {v:'widowed', icon:'🕯️', label:'אלמן/ה', desc:'תקרה: 10,551 ₪'},
+      ]
+    },
+    {
+      id:'income',
+      eyebrow:'שלב 4',
+      title:'הכנסה ברוטו חודשית',
+      help:'הכנסה משפיעה על שיעור הקצבה (קצבה מלאה / 50% / לא זכאי).',
+      type:'select',
+      options:[
+        {v:'low', icon:'💸', label:'עד 10,551 ₪', desc:'זכאות לקצבה מלאה'},
+        {v:'mid', icon:'💵', label:'10,551 – 15,827 ₪', desc:'זכאות לקצבה חלקית (50%)'},
+        {v:'high', icon:'💰', label:'מעל 15,827 ₪', desc:'בדרך כלל לא זכאי'},
+        {v:'unknown', icon:'❓', label:'לא יודע/ת', desc:'לבדיקה פרטנית'},
+      ]
+    },
+    {
+      id:'living',
+      eyebrow:'שלב 5',
+      title:'מקום מגורים',
+      help:'במוסד סיעודי הזכאות שונה (קוד הכנסה / הסדר אחר).',
+      type:'select',
+      options:[
+        {v:'home', icon:'🏠', label:'בית פרטי / שכור', desc:'זכאי לסיעוד בקהילה'},
+        {v:'sheltered', icon:'🏘️', label:'דיור מוגן', desc:'זכאי לסיעוד בקהילה'},
+        {v:'institution', icon:'🏥', label:'בית אבות סיעודי', desc:'הסדר חוק ביטוח בריאות / רווחה'},
+      ]
+    },
+    {
+      id:'adl',
+      eyebrow:'שלב 6',
+      title:'רמת תלות בעזרת אדם אחר',
+      help:'בפעולות יומיומיות בסיסיות (לבישה, רחצה, אכילה, ניידות בבית, השגחה, שליטה על סוגרים).',
+      type:'select',
+      options:[
+        {v:'level6', icon:'🔴', label:'תלות מלאה — 6 פעולות', desc:'רמה 6 — מקסימום (כ-30 שעות)'},
+        {v:'level5', icon:'🟠', label:'תלות חמורה מאוד', desc:'רמה 5 — כ-26 שעות'},
+        {v:'level4', icon:'🟡', label:'תלות חמורה', desc:'רמה 4 — כ-22 שעות'},
+        {v:'level3', icon:'🟢', label:'תלות בינונית-חמורה', desc:'רמה 3 — כ-16 שעות'},
+        {v:'level2', icon:'🔵', label:'תלות בינונית', desc:'רמה 2 — כ-9.75 שעות'},
+        {v:'level1', icon:'⚪', label:'תלות קלה', desc:'רמה 1 — כ-5.5 שעות'},
+        {v:'none', icon:'✅', label:'עצמאי בעיקר', desc:'בדרך כלל לא זכאי'},
+      ]
+    },
+    {
+      id:'cognitive',
+      eyebrow:'שלב 7',
+      title:'ירידה קוגניטיבית',
+      help:'דמנציה, אלצהיימר או ירידה קוגניטיבית אחרת מעלות זכאות.',
+      type:'select',
+      options:[
+        {v:'severe', icon:'🧠', label:'ירידה קוגניטיבית חמורה', desc:'אלצהיימר מתקדם / דמנציה'},
+        {v:'mod', icon:'💭', label:'ירידה בינונית', desc:'דורש השגחה רוב היום'},
+        {v:'mild', icon:'🤔', label:'ירידה קלה', desc:'בלבול חלקי / שכחה'},
+        {v:'none', icon:'✅', label:'תפקוד קוגניטיבי תקין', desc:''},
+      ]
+    },
+    {
+      id:'supervision',
+      eyebrow:'שלב 8',
+      title:'צורך בהשגחה רצופה',
+      help:'האם קיים סיכון בהשארת האדם לבדו (נפילות, שיטוט, סכנה).',
+      type:'select',
+      options:[
+        {v:'yes', icon:'🚨', label:'כן — סכנה ממשית', desc:'מוסיף נקודות במבחן התלות'},
+        {v:'partial', icon:'⚠️', label:'חלקית', desc:'דורש מעקב'},
+        {v:'no', icon:'✅', label:'לא נדרשת', desc:''},
+      ]
+    },
+    {
+      id:'special',
+      eyebrow:'שלב 9',
+      title:'שירותי בריאות מיוחדים',
+      help:'מצבים שמקנים תוספות מיוחדות בקצבה.',
+      type:'select',
+      options:[
+        {v:'vent', icon:'🫁', label:'מונשם', desc:'תוספת קצבת מונשמים'},
+        {v:'dialysis', icon:'💉', label:'דיאליזה', desc:'הסעות מסובסדות'},
+        {v:'oxygen', icon:'💨', label:'חמצן ביתי', desc:'מימון ציוד'},
+        {v:'feeding', icon:'🍽️', label:'הזנה מלאכותית', desc:'תוספת שעות'},
+        {v:'none', icon:'➖', label:'אין/לא רלוונטי', desc:''},
+      ]
+    },
+  ];
+
+  // מאגר זכויות סיעוד — סכומים מבוססי 2026 (לאימות מול btl.gov.il)
+  const RIGHTS = [
+    {
+      id:'siud',
+      cat:'siud',
+      name:'גמלת סיעוד',
+      icon:'🤲',
+      desc:'קצבה חודשית או שעות טיפול בבית למי שזקוק לעזרת אדם אחר. ניתן לבחור בין כסף, שעות מטפל, או שילוב (לפי החוק החדש). 6 רמות.',
+      steps:[
+        'הגשת תביעה לסיעוד בסניף ב"ל הקרוב (טופס 2600)',
+        'מבחן הכנסות לפי תלוש פנסיה / קצבאות',
+        'מבחן תלות בבית ע"י אחות מטעם ב"ל',
+        'קביעת רמת זכאות (1-6) ובחירת סל שירותים',
+      ],
+      score: a => {
+        if(a.adl === 'none') return 0;
+        if(a.income === 'high') return 5;
+        if(!isRetirementAge(a)) return 0;
+        const adlScores = { level6:95, level5:90, level4:85, level3:75, level2:60, level1:45 };
+        let s = adlScores[a.adl] || 0;
+        if(a.cognitive === 'severe') s = Math.min(100, s+10);
+        return s;
+      },
+      getAmount: a => {
+        const amounts = {
+          level6: '~7,238 ₪ / 30 שעות',
+          level5: '~5,565 ₪ / 26 שעות',
+          level4: '~4,494 ₪ / 22 שעות',
+          level3: '~3,600 ₪ / 16 שעות',
+          level2: '~2,200 ₪ / 10 שעות',
+          level1: '~1,659 ₪ / 5.5 שעות'
+        };
+        const base = amounts[a.adl] || 'תלוי במבחן תלות';
+        if(a.income === 'mid' && base !== amounts.level1) return base + ' (50%)';
+        return base;
+      },
+      monthly: a => {
+        const v = {level6:7238,level5:5565,level4:4494,level3:3600,level2:2200,level1:1659}[a.adl] || 0;
+        return a.income === 'mid' ? Math.round(v * 0.5) : v;
+      }
+    },
+    {
+      id:'vent-supplement',
+      cat:'siud',
+      name:'תוספת מונשם',
+      icon:'🫁',
+      desc:'תוספת מיוחדת לקצבת הסיעוד למי שמונשם באופן רציף. סכום עד 100% מקצבת רמה 6.',
+      steps:['אישור רפואי מבית חולים','הגשה דרך תיק הסיעוד','בדיקה נוספת של ב"ל'],
+      score: a => a.special === 'vent' ? 95 : 0,
+      getAmount: () => 'עד 7,238 ₪ נוספים',
+      monthly: a => a.special === 'vent' ? 7238 : 0
+    },
+    {
+      id:'old-age-pension',
+      cat:'pension',
+      name:'קצבת זקנה',
+      icon:'👴',
+      desc:'קצבה חודשית מהביטוח הלאומי מגיל פרישה ועד 120. סכום בסיס: 1,795 ₪ ליחיד, 2,696 ₪ לזוג. דחיית קצבה מעלה ב-5% לשנה.',
+      steps:[
+        'הגשה אוטומטית בגיל פרישה (אם רשום בב"ל)',
+        'במידת הצורך — טופס 480',
+        'לקבל זקנה בסיוע — אישור דחיית הקצבה',
+      ],
+      score: a => isRetirementAge(a) ? 95 : 0,
+      getAmount: a => a.marital === 'couple' ? '~2,696 ₪ + ילד' : '~1,795 ₪',
+      monthly: a => a.marital === 'couple' ? 2696 : 1795
+    },
+    {
+      id:'income-supplement',
+      cat:'pension',
+      name:'הבטחת הכנסה / השלמה לזקנה',
+      icon:'💵',
+      desc:'תוספת על קצבת הזקנה למי שאין לו הכנסות נוספות. סכום משתנה לפי מצב משפחתי.',
+      steps:[
+        'הגשת טופס בקשה להבטחת הכנסה',
+        'מבחן הכנסות + רכוש',
+        'אישור חודשי',
+      ],
+      score: a => {
+        if(!isRetirementAge(a)) return 0;
+        if(a.income === 'low') return 80;
+        if(a.income === 'mid') return 35;
+        return 0;
+      },
+      getAmount: a => a.marital === 'couple' ? 'עד ~4,200 ₪ סה"כ' : 'עד ~3,300 ₪ סה"כ',
+      monthly: a => {
+        const base = a.marital === 'couple' ? 4200 : 3300;
+        const pension = a.marital === 'couple' ? 2696 : 1795;
+        return Math.max(0, base - pension);
+      }
+    },
+    {
+      id:'tax-9-5',
+      cat:'benefits',
+      name:'פטור ממס הכנסה (סעיף 9(5))',
+      icon:'💰',
+      desc:'פטור ממס הכנסה לנכים 90%+ או 100% נכות רפואית. אם יש פנסיה / הכנסה — חיסכון משמעותי. הפטור גם רטרואקטיבי עד 6 שנים אחורה.',
+      steps:[
+        'אישור ועדה רפואית 90%+ מב"ל',
+        'הגשת בקשה לפקיד שומה',
+        'דרישה להחזרי מס עד 6 שנים אחורה',
+      ],
+      score: a => {
+        let s = 0;
+        if(['level6','level5','level4'].includes(a.adl)) s+=60;
+        if(a.cognitive === 'severe') s+=20;
+        return s;
+      },
+      getAmount: () => 'פטור מלא ממס',
+      monthly: () => 1500
+    },
+    {
+      id:'arnona',
+      cat:'benefits',
+      name:'הנחה בארנונה',
+      icon:'🏛️',
+      desc:'הנחה משמעותית בארנונה לפנסיונרים זכאי שירותים מיוחדים / סיעוד. שיעור משתנה לפי הרשות (25%-100%).',
+      steps:[
+        'פנייה למחלקת הארנונה ברשות',
+        'הצגת אישור גמלת סיעוד / קצבת זקנה',
+        'חידוש שנתי',
+      ],
+      score: a => {
+        let s = 0;
+        if(isRetirementAge(a)) s += 50;
+        if(['level6','level5','level4','level3'].includes(a.adl)) s+=20;
+        if(a.income === 'low') s+=15;
+        return s;
+      },
+      getAmount: () => 'עד 100% הנחה',
+      monthly: () => 400
+    },
+    {
+      id:'electricity',
+      cat:'benefits',
+      name:'הנחה בחשבון חשמל',
+      icon:'💡',
+      desc:'50% הנחה על 400 קוט"ש ראשונים. ניתנת אוטומטית לזכאי גמלת סיעוד.',
+      steps:[
+        'אוטומטי לאחר אישור סיעוד',
+        'אם לא הופעל — פנייה לחברת חשמל',
+      ],
+      score: a => ['level6','level5','level4','level3'].includes(a.adl) ? 70 : (a.adl ? 40 : 0),
+      getAmount: () => '50% הנחה',
+      monthly: () => 150
+    },
+    {
+      id:'water',
+      cat:'benefits',
+      name:'תעריף מים מוזל',
+      icon:'💧',
+      desc:'3.5 מ"ק נוספים בתעריף נמוך. אוטומטי לזכאי סיעוד.',
+      steps:['אוטומטי לפי רשימות ב"ל'],
+      score: a => ['level6','level5','level4'].includes(a.adl) ? 60 : 30,
+      getAmount: () => 'תעריף מוזל',
+      monthly: () => 50
+    },
+    {
+      id:'meds',
+      cat:'benefits',
+      name:'הנחה בהשתתפות עצמית לתרופות',
+      icon:'💊',
+      desc:'הנחה משמעותית בקופ"ח עבור תרופות במרשם, מקסימום חודשי מוגבל. לפנסיונרים זכאי הבטחת הכנסה — לעיתים פטור.',
+      steps:[
+        'אוטומטי לרוב הזכאים',
+        'אישור הקופה לפי תיק רפואי',
+      ],
+      score: a => {
+        let s = 50;
+        if(a.income === 'low') s+=30;
+        if(['level6','level5','level4'].includes(a.adl)) s+=15;
+        return s;
+      },
+      getAmount: () => 'תקרה חודשית מוזלת',
+      monthly: () => 200
+    },
+    {
+      id:'wheelchair',
+      cat:'equipment',
+      name:'ציוד שיקומי במימון סל הבריאות',
+      icon:'♿',
+      desc:'כסא גלגלים, מיטה סיעודית, מנוף, ציוד נשימה — במימון מלא או חלקי דרך קופ"ח / משרד הבריאות.',
+      steps:[
+        'הערכה של מרפא בעיסוק',
+        'הגשה דרך קופ"ח / מח׳ ציוד שיקומי',
+        'אישור והזמנה',
+      ],
+      score: a => {
+        let s = 0;
+        if(['level6','level5','level4'].includes(a.adl)) s+=70;
+        else if(a.adl === 'level3') s+=40;
+        if(a.special === 'oxygen' || a.special === 'vent') s+=25;
+        return s;
+      },
+      getAmount: () => 'מימון מלא או חלקי',
+      monthly: () => 1200
+    },
+    {
+      id:'accessibility',
+      cat:'equipment',
+      name:'התאמות נגישות בבית',
+      icon:'🏠',
+      desc:'רמפות, מקלחת מותאמת, ידיות אחיזה, מעלון, דלתות מורחבות. מימון משרד הבריאות / שיכון.',
+      steps:[
+        'הערכת מרפא בעיסוק',
+        'הגשה למשרד הבריאות / שיכון',
+        'ביצוע התאמות',
+      ],
+      score: a => {
+        let s = 0;
+        if(['level6','level5','level4'].includes(a.adl)) s+=70;
+        else if(a.adl === 'level3') s+=45;
+        return s;
+      },
+      getAmount: () => 'מימון מלא או חלקי',
+      monthly: () => 1500
+    },
+    {
+      id:'transport',
+      cat:'equipment',
+      name:'הסעות רפואיות מסובסדות',
+      icon:'🚐',
+      desc:'הסעות לטיפולים (דיאליזה, כימותרפיה, פיזיותרפיה) במימון קופ"ח / ב"ל. תג נכה לרכב פרטי.',
+      steps:[
+        'אישור רפואי על צורך בהסעה',
+        'תיאום עם קופ"ח / מד"א',
+        'בקשת תג נכה ממשרד התחבורה',
+      ],
+      score: a => {
+        let s = 0;
+        if(a.special === 'dialysis') s+=85;
+        if(['level6','level5','level4'].includes(a.adl)) s+=30;
+        return s;
+      },
+      getAmount: () => 'מסובסד / חינם',
+      monthly: () => 500
+    },
+    {
+      id:'guardianship',
+      cat:'legal',
+      name:'אפוטרופסות / ייפוי כוח מתמשך',
+      icon:'⚖️',
+      desc:'הסדרה משפטית של מי שמקבל החלטות (רפואיות / כלכליות / אישיות). קריטי בגיל זה — מומלץ ייפוי כוח מתמשך לפני ירידה קוגניטיבית.',
+      steps:[
+        'אם עדיין כשיר — ייפוי כוח מתמשך אצל עו"ד מוסמך',
+        'אם לא — הגשת בקשה לאפוטרופסות בבית משפט',
+        'חוות דעת רפואית ממוקדת',
+        'הפקדה אצל האפוטרופוס הכללי',
+      ],
+      score: a => {
+        let s = 50;
+        if(a.cognitive === 'severe') s = 95;
+        else if(a.cognitive === 'mod') s = 75;
+        else if(a.cognitive === 'mild') s = 60;
+        return s;
+      },
+      getAmount: () => 'הליך משפטי',
+      monthly: () => 0
+    },
+    {
+      id:'estate-planning',
+      cat:'legal',
+      name:'תכנון צוואה והערכות עתיד',
+      icon:'📜',
+      desc:'צוואה, הסדרת ירושה, צו ירושה / קיום צוואה. למניעת סכסוכים בקרב יורשים.',
+      steps:[
+        'פגישה עם עו"ד ירושה',
+        'ניסוח צוואה (לפי חוק או נוטריונית)',
+        'הפקדה ברשם הירושות',
+      ],
+      score: a => isRetirementAge(a) ? 55 : 0,
+      getAmount: () => 'הליך משפטי',
+      monthly: () => 0
+    },
+    {
+      id:'foreign-worker',
+      cat:'siud',
+      name:'היתר העסקת עובד זר סיעוד',
+      icon:'🌍',
+      desc:'אפשרות חוקית להעסיק עובד/ת זר/ה לטיפול 24/7. נדרש היתר מרשות האוכלוסין + תיק סיעוד פעיל.',
+      steps:[
+        'אישור סיעוד פעיל (רמה 4+)',
+        'הגשת בקשה להיתר ברשות האוכלוסין',
+        'חתימה על חוזה דרך לשכה מורשית',
+      ],
+      score: a => {
+        if(!isRetirementAge(a)) return 0;
+        if(['level6','level5'].includes(a.adl)) return 85;
+        if(a.adl === 'level4') return 60;
+        if(a.cognitive === 'severe') return 70;
+        return 0;
+      },
+      getAmount: () => 'דרך הסכם תעסוקה',
+      monthly: () => 0
+    },
+    {
+      id:'social-club',
+      cat:'community',
+      name:'מועדון יום לקשיש / מרכז יום',
+      icon:'☕',
+      desc:'מסגרת חברתית עם הסעות, ארוחות ופעילויות — במימון חלקי דרך גמלת סיעוד או רווחה.',
+      steps:[
+        'פנייה למחלקת הרווחה ברשות',
+        'הערכת עו״ס',
+        'השמה במועדון / מרכז יום מתאים',
+      ],
+      score: a => {
+        if(!isRetirementAge(a)) return 0;
+        if(['level1','level2','level3'].includes(a.adl)) return 75;
+        if(a.cognitive && a.cognitive !== 'none') return 55;
+        return 40;
+      },
+      getAmount: () => 'מסובסד',
+      monthly: () => 1500
+    },
+    {
+      id:'distress-button',
+      cat:'community',
+      name:'לחצן מצוקה / משדר',
+      icon:'🆘',
+      desc:'משדר מצוקה בבית עם תגובה 24/7. מסובסד דרך גמלת סיעוד.',
+      steps:[
+        'בקשה במסגרת סל הסיעוד',
+        'התקנה בבית ע"י חברה מורשית',
+      ],
+      score: a => ['level3','level4','level5','level6'].includes(a.adl) ? 70 : 50,
+      getAmount: () => 'במימון סל סיעוד',
+      monthly: () => 100
+    },
+    {
+      id:'parking-permit',
+      cat:'equipment',
+      name:'תו חניה לנכה + פטור מאגרת רישוי',
+      icon:'🅿️',
+      desc:'תו חניה במקומות מוגדרים + פטור מאגרת רישוי שנתית. מתאים לזכאי סיעוד שתנועה ללא רכב עלולה לערער את בריאותם. עיבוד דיגיטלי תוך 30 יום. תו לצמיתות לבעלי מוגבלות קבועה — ללא חידוש.',
+      steps:[
+        'הגשת טופס מקוון באתר משרד התחבורה (*5678)',
+        'צירוף אישור סיעוד / מסמכים רפואיים',
+        'בקשה לתו לצמיתות במקרים של מוגבלות קבועה',
+      ],
+      score: a => {
+        let s = 0;
+        if(['level6','level5','level4'].includes(a.adl)) s+=75;
+        else if(a.adl === 'level3') s+=55;
+        else if(a.adl === 'level2') s+=35;
+        if(a.cognitive === 'severe') s+=15;
+        return s;
+      },
+      getAmount: () => 'פטור + תו חניה',
+      monthly: () => 120
+    },
+    {
+      id:'queue-exempt',
+      cat:'benefits',
+      name:'פטור מהמתנה בתור',
+      icon:'⏭️',
+      desc:'פטור מהמתנה בתור בכל שירות ציבורי/פרטי — לאנשים עם ירידה קוגניטיבית, אזרחים ותיקים מעל גיל 80, ולאנשים עם מוגבלות נפשית/שכלית 40%+. תעודה דיגיטלית עם תוקף משפטי מלא. כולל את המלווה.',
+      steps:[
+        'הוצאת תעודה דיגיטלית באתר משרד הרווחה / כל-זכות',
+        'מעל גיל 80 — תעודה ניתנת אוטומטית עם הצגת ת.ז.',
+        'הצגה בכל קופאי / שירות',
+      ],
+      score: a => {
+        let s = 0;
+        if(a.age && a.age >= 80) s+=80;
+        if(a.cognitive === 'severe') s+=80;
+        else if(a.cognitive === 'mod') s+=60;
+        else if(a.cognitive === 'mild') s+=40;
+        return Math.min(100, s);
+      },
+      getAmount: () => 'תעודה דיגיטלית',
+      monthly: () => 0
+    },
+  ];
+
+  const CATS = {
+    siud:      {title:'סיעוד וטיפול אישי', icon:'🤲'},
+    pension:   {title:'קצבאות והבטחת הכנסה', icon:'💵'},
+    benefits:  {title:'הטבות והנחות', icon:'💡'},
+    equipment: {title:'ציוד והנגשה', icon:'♿'},
+    legal:     {title:'הליכים משפטיים', icon:'⚖️'},
+    community: {title:'קהילה ושירותים', icon:'☕'},
+  };
+
+  function isRetirementAge(a){
+    if(!a.age || !a.gender) return false;
+    return a.gender === 'female' ? a.age >= 62 : a.age >= 67;
+  }
+
+  const state = {
+    step: 0,
+    answers: { age: router.age || null, gender: router.gender || null },
+    age: router.age || 70,
+  };
+
+  const app = document.getElementById('app');
+
+  function nextQuestionIndex(from){
+    for(let i=from; i<QUESTIONS.length; i++){
+      const q = QUESTIONS[i];
+      if(q.skipIf && q.skipIf(state.answers)) continue;
+      return i;
+    }
+    return QUESTIONS.length;
+  }
+
+  function render(){
+    const idx = state.step;
+    if(idx >= QUESTIONS.length){ renderResults(); return; }
+    const q = QUESTIONS[idx];
+    if(q.skipIf && q.skipIf(state.answers)){
+      state.step = nextQuestionIndex(idx+1);
+      render();
+      return;
+    }
+    const visibleSteps = QUESTIONS.filter(qq => !(qq.skipIf && qq.skipIf(state.answers)));
+    const visibleCurrent = visibleSteps.findIndex(qq => qq.id === q.id) + 1;
+    const total = visibleSteps.length;
+    const percent = Math.round(((visibleCurrent-1) / total) * 100);
+
+    let optionsHTML = '';
+    if(q.type === 'select'){
+      optionsHTML = `<div class="options">${q.options.map(o => `
+        <button class="option ${state.answers[q.id]===o.v?'selected':''}" data-value="${o.v}">
+          <div class="check"></div>
+          ${o.icon?`<div class="opt-icon">${o.icon}</div>`:''}
+          <div class="opt-label"><strong>${o.label}</strong>${o.desc?`<span>${o.desc}</span>`:''}</div>
+        </button>`).join('')}</div>`;
+    } else if(q.type === 'age'){
+      optionsHTML = `<div class="age-input">
+        <button class="age-btn" id="ageMinus" aria-label="פחות">−</button>
+        <div class="age-display"><span id="ageVal">${state.age}</span><small>${state.age===1?'שנה':'שנים'}</small></div>
+        <button class="age-btn" id="agePlus" aria-label="יותר">+</button>
+      </div>`;
+    }
+
+    const canNext = q.type === 'age' || state.answers[q.id] !== undefined;
+    const isFirst = state.step === 0;
+    const introHTML = isFirst ? `
+      <div class="intro-banner">
+        <h2>📋 בודק זכאות לסיעוד וזקנה</h2>
+        <p>9 שאלות קצרות שעוזרות להבין על אילו זכויות יש סיכוי גבוה. הבדיקה מתאימה לגיל פרישה ומעלה (זכר 67+ / נקבה 62+).</p>
+        <p style="font-size:.78rem;color:var(--brand-orange);font-weight:700;margin-top:8px">⚠️ תוצאות הבדיקה הן אומדן בלבד · ט.ל.ח · ראה הבהרה מלאה בסיום</p>
+      </div>` : '';
+
+    app.innerHTML = `${introHTML}
+      <div class="progress-wrap">
+        <div class="progress-info">
+          <span class="step-num">שלב ${visibleCurrent} מתוך ${total}</span>
+          <span class="step-percent">${percent}% הושלם</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div>
+      </div>
+      <div class="card">
+        <div class="question-eyebrow">${q.eyebrow}</div>
+        <h2 class="question-title">${q.title}</h2>
+        ${q.help?`<p class="question-help">${q.help}</p>`:''}
+        ${optionsHTML}
+        <div class="actions">
+          ${state.step>0?'<button class="btn btn-ghost" id="backBtn">→ חזור</button>':''}
+          <button class="btn btn-primary" id="nextBtn" ${!canNext?'disabled':''}>
+            ${visibleCurrent === total ? 'הצג תוצאות ←' : 'המשך ←'}
+          </button>
+        </div>
+      </div>
+      <p class="disclaimer">🔒 אנונימי · ללא רישום · אומדן בלבד ואינו תחליף לייעוץ מקצועי · <strong>ט.ל.ח</strong></p>`;
+
+    if(q.type === 'select'){
+      app.querySelectorAll('.option').forEach(b => b.addEventListener('click', () => {
+        state.answers[q.id] = b.dataset.value;
+        render();
+      }));
+    } else if(q.type === 'age'){
+      const minus = document.getElementById('ageMinus'), plus = document.getElementById('agePlus'), val = document.getElementById('ageVal');
+      const update = () => {
+        val.textContent = state.age;
+        val.nextElementSibling.textContent = state.age === 1 ? 'שנה' : 'שנים';
+        minus.disabled = state.age <= 40;
+        plus.disabled = state.age >= 120;
+        state.answers.age = state.age;
+      };
+      update();
+      minus.addEventListener('click', () => { if(state.age>40){state.age--;update();}});
+      plus.addEventListener('click', () => { if(state.age<120){state.age++;update();}});
+      state.answers.age = state.age;
+    }
+
+    const next = document.getElementById('nextBtn');
+    if(next) next.addEventListener('click', () => {
+      if(q.type === 'age') state.answers.age = state.age;
+      state.step = nextQuestionIndex(state.step + 1);
+      render();
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+    const back = document.getElementById('backBtn');
+    if(back) back.addEventListener('click', () => {
+      let prev = state.step - 1;
+      while(prev > 0 && QUESTIONS[prev].skipIf && QUESTIONS[prev].skipIf(state.answers)) prev--;
+      state.step = prev;
+      render();
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  }
+
+  function renderResults(){
+    const a = {...state.answers, age: state.answers.age || state.age};
+    const scored = RIGHTS.map(r => ({
+      ...r,
+      score: Math.min(100, Math.max(0, r.score(a))),
+      computedAmount: r.getAmount ? r.getAmount(a) : null,
+      computedMonthly: r.monthly ? (r.monthly(a) || 0) : 0,
+    })).sort((x,y) => y.score - x.score);
+
+    const high = scored.filter(r => r.score >= 60);
+    const medium = scored.filter(r => r.score >= 35 && r.score < 60);
+    const low = scored.filter(r => r.score < 35 && r.score > 0);
+    const relevant = [...high, ...medium];
+    const totalMonthly = relevant.reduce((sum, r) => sum + r.computedMonthly, 0);
+    const totalAnnual = totalMonthly * 12;
+    const fmt = n => n.toLocaleString('he-IL');
+
+    const adlLbl = {level6:'תלות מלאה (רמה 6)',level5:'תלות חמורה (5)',level4:'תלות חמורה (4)',level3:'תלות בינונית (3)',level2:'תלות בינונית (2)',level1:'תלות קלה (1)',none:'עצמאי'};
+    const summary = `היי, סיימתי בודק זכאות סיעוד.%0Aגיל: ${a.age}%0Aמגדר: ${a.gender==='male'?'זכר':'נקבה'}%0Aרמת תלות: ${adlLbl[a.adl]||'-'}%0Aזכויות שנמצאו: ${high.length} גבוה / ${medium.length} בינוני.%0Aהערכת שווי כספי: ~${fmt(totalMonthly)} ₪/חודש (≈ ${fmt(totalAnnual)} ₪/שנה).%0Aמבקש/ת ליווי מקצועי.`;
+    const wa = `https://api.whatsapp.com/send?phone=97225023456&text=${summary}`;
+
+    app.innerHTML = `
+      <div class="results-header">
+        <span class="results-badge">הבדיקה הסתיימה</span>
+        <h1 class="results-title">מצאנו <em>${relevant.length} זכויות</em> רלוונטיות</h1>
+        <p class="results-sub">להלן הקצבאות וההטבות שלפי הנתונים יש סיכוי טוב לקבל. כל זכות מצריכה הליך מסודר.</p>
+      </div>
+      <div style="background:linear-gradient(135deg,var(--green),#1e6a45);color:#fff;border-radius:var(--radius-lg);padding:24px;margin-bottom:24px;text-align:center;box-shadow:var(--shadow-md);position:relative;overflow:hidden">
+        <div style="position:absolute;top:-30%;right:-20%;width:60%;height:200%;background:radial-gradient(circle,rgba(255,212,85,.25),transparent 60%);pointer-events:none"></div>
+        <div style="position:relative">
+          <span style="display:inline-block;background:rgba(255,255,255,.2);padding:5px 14px;border-radius:999px;font-size:.78rem;font-weight:700;letter-spacing:.05em;margin-bottom:10px">💰 הערכת שווי כספי</span>
+          <h3 style="font-family:'Rubik',sans-serif;font-weight:900;font-size:clamp(1.5rem,5vw,2.2rem);margin-bottom:6px;color:#fff">~ ${fmt(totalMonthly)} ₪ / חודש</h3>
+          <p style="color:rgba(255,255,255,.95);font-size:1rem;margin-bottom:14px">≈ <strong style="color:var(--brand-yellow);font-size:1.15rem">${fmt(totalAnnual)} ₪ בשנה</strong></p>
+          <p style="font-size:.78rem;color:rgba(255,255,255,.8);line-height:1.5">סכום משוערך של כלל הזכויות הרלוונטיות (קצבאות + שווי הטבות). <strong style="color:var(--brand-yellow)">אומדן בלבד · ט.ל.ח</strong> · הסכום בפועל תלוי באישור הגופים המוסמכים.</p>
+        </div>
+      </div>
+
+      <div class="summary">
+        <div class="summary-card high"><strong>${high.length}</strong><span>סיכוי גבוה</span></div>
+        <div class="summary-card medium"><strong>${medium.length}</strong><span>סיכוי בינוני</span></div>
+        <div class="summary-card low"><strong>${low.length}</strong><span>נוספות</span></div>
+      </div>
+      <div class="results-list">
+        ${Object.entries(CATS).map(([catKey, catMeta]) => {
+          const catRights = relevant.filter(r => r.cat === catKey);
+          if(!catRights.length) return '';
+          return `<div class="cat-section">
+            <div class="cat-header">
+              <span class="ch-icon">${catMeta.icon}</span>
+              <span class="ch-title">${catMeta.title}</span>
+              <span class="ch-count">${catRights.length}</span>
+            </div>
+            ${catRights.map(r => {
+              const cls = r.score>=60?'high':'medium';
+              const lbl = r.score>=60?'סיכוי גבוה':'סיכוי בינוני';
+              const lblCls = r.score>=60?'likelihood-high':'likelihood-medium';
+              return `<article class="result-card ${cls}">
+                <div class="result-head">
+                  <div class="result-icon">${r.icon}</div>
+                  <div class="result-info">
+                    <h3>${r.name}</h3>
+                    <span class="result-likelihood ${lblCls}">${lbl} · ${r.score}%</span>
+                    ${r.computedAmount?`<div><span class="result-amount">${r.computedAmount}</span></div>`:''}
+                  </div>
+                </div>
+                <p class="result-desc">${r.desc}</p>
+                <div class="result-steps"><strong>שלבי המימוש</strong>
+                  <ul>${r.steps.map(s => `<li>${s}</li>`).join('')}</ul>
+                </div>
+              </article>`;
+            }).join('')}
+          </div>`;
+        }).join('')}
+        ${low.length?`<details style="margin-top:8px">
+          <summary style="cursor:pointer;padding:14px 18px;background:var(--brand-purple-soft);border-radius:var(--radius-md);font-weight:700;color:var(--brand-purple);font-size:.92rem">
+            ▼ ראה ${low.length} זכויות נוספות לבדיקה
+          </summary>
+          <div style="display:grid;gap:14px;margin-top:14px">
+            ${low.map(r => `<article class="result-card low">
+              <div class="result-head">
+                <div class="result-icon">${r.icon}</div>
+                <div class="result-info">
+                  <h3>${r.name}</h3>
+                  <span class="result-likelihood likelihood-low">לבדיקה · ${r.score}%</span>
+                </div>
+              </div>
+              <p class="result-desc">${r.desc}</p>
+            </article>`).join('')}
+          </div>
+        </details>`:''}
+      </div>
+
+      <div class="cta-block">
+        <h3>רוצים שניקח את זה מכאן?</h3>
+        <p>נציג מ-מימושים יחזור אליכם בהקדם עם תוכנית פעולה מותאמת אישית — ללא עלות.</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="${wa}" target="_blank" rel="noopener">📱 לקבלת התוצאות בוואטסאפ — ללחוץ כאן</a>
+          <a class="btn btn-primary" href="#lead" target="_blank" rel="noopener">✏️ להשארת פרטים כדי שנחזור אליכם — ליחצו כאן</a>
+          <button type="button" class="btn btn-ghost" id="restartBtn">בדוק שוב</button>
+        </div>
+        <p class="disclaimer" style="margin-top:14px;color:rgba(255,255,255,.85)">בלחיצה על אחד הכפתורים הנכם מאשרים שקראתם את <a href="#" onclick="event.preventDefault();showLegal('takanon')" style="color:var(--brand-yellow);text-decoration:underline">התקנון</a> ו<a href="#" onclick="event.preventDefault();showLegal('privacy')" style="color:var(--brand-yellow);text-decoration:underline">מדיניות הפרטיות</a>, ושהתוצאות הן אומדן בלבד · <strong>ט.ל.ח</strong></p>
+      </div>
+
+      <div class="disclaimer-full">
+        <strong>⚠️ הבהרה משפטית — חובה לקרוא · ט.ל.ח</strong>
+        תוצאות הבדיקה הן <strong>אומדן ראשוני בלבד</strong> המבוסס על מידע כללי. הזכאות בפועל נקבעת אך ורק על ידי הגופים המוסמכים (המוסד לביטוח לאומי, משרדי הממשלה, רשויות מקומיות, קופות חולים) בכפוף לחוקים, תקנות, חוזרי מנכ"ל, ועדות, מסמכים, אבחונים ובדיקות. הסכומים והתעריפים מבוססים על לוח המוסד לביטוח לאומי לשנת 2026 ועשויים להשתנות ללא הודעה.
+        <br><br>
+        השימוש בכלי <strong>אינו מהווה ייעוץ משפטי, רפואי, סוציאלי או מקצועי</strong>, אינו יוצר יחסי לקוח-נותן שירות, ואינו תחליף לייעוץ פרטני. החברה, בעליה ומפעיליה <strong>לא יישאו באחריות</strong> לכל נזק ישיר או עקיף שייגרם משימוש או הסתמכות על המידע — לרבות אי-קבלת זכאות, פספוס מועד הגשה או החלטות הגופים המוסמכים. אנו ממליצים לאמת מידע מול המוסד לביטוח לאומי (8809*) ו-btl.gov.il, ולהיוועץ עם איש מקצוע.
+      </div>`;
+
+    // לידים מטופלים דרך window.LEAD_URL (מוגדר בסוף הקובץ). הוואטסאפ נבנה ישירות עם summary.
+    document.querySelectorAll('a[href="#lead"]').forEach(a => { if(window.LEAD_URL) a.href = window.LEAD_URL; });
+    window.showLegal = function(key){ document.getElementById('legalModal').style.display='flex'; document.getElementById('legalTitle').textContent = key==='takanon'?'תקנון':key==='privacy'?'מדיניות פרטיות':'הצהרת נגישות'; document.getElementById('legalBody').innerHTML = window.LEGAL_TEXTS[key]; };
+
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      state.step = 0;
+      state.answers = { age: router.age || null, gender: router.gender || null };
+      state.age = router.age || 70;
+      render();
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  }
+
+  if(state.answers.age) state.age = state.answers.age;
+  state.step = nextQuestionIndex(0);
+  render();
+</script>
+
+<!-- ============== LEGAL MODAL + A11Y WIDGET (shared) ============== -->
+<style>
+  .a11y-fab{position:fixed;bottom:20px;right:20px;z-index:9998;width:58px;height:58px;border-radius:50%;background:#1559a8;color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px -6px rgba(0,0,0,.4);font-size:1.8rem;cursor:pointer;border:3px solid #fff}
+  .a11y-fab:hover{transform:scale(1.08)}
+  .a11y-panel{position:fixed;top:0;right:-380px;width:360px;max-width:92vw;height:100vh;background:#fff;z-index:9999;box-shadow:-10px 0 40px -10px rgba(0,0,0,.3);transition:right .35s;overflow-y:auto;font-family:'Heebo',sans-serif;direction:rtl}
+  .a11y-panel.open{right:0}
+  .a11y-panel-head{background:#1559a8;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:2}
+  .a11y-panel-head h3{font-size:1.1rem;font-weight:800;margin:0}
+  .a11y-close{background:rgba(255,255,255,.2);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:1.2rem;cursor:pointer}
+  .a11y-body{padding:18px 16px}
+  .a11y-group{margin-bottom:18px}
+  .a11y-group-title{font-size:.78rem;font-weight:800;color:#555;margin-bottom:8px;text-transform:uppercase}
+  .a11y-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .a11y-btn{padding:10px 8px;border:2px solid #ddd;background:#f8f8f8;border-radius:10px;cursor:pointer;font-family:inherit;font-size:.82rem;font-weight:600;color:#222;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .a11y-btn.active{border-color:#1559a8;background:#e6efff;color:#1559a8}
+  .a11y-btn .ico{font-size:1.2rem}
+  .a11y-reset{width:100%;padding:12px;background:#dc3545;color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:10px}
+  .a11y-statement{background:#f0f4f9;border-radius:10px;padding:12px 14px;font-size:.78rem;line-height:1.6;color:#444;margin-top:12px}
+  .a11y-statement a{color:#1559a8;font-weight:700}
+  html.a11y-font-lg{font-size:115%}
+  html.a11y-font-xl{font-size:130%}
+  body.a11y-contrast > :not(.a11y-fab):not(.a11y-panel){filter:contrast(1.4)!important}
+  body.a11y-dark > :not(.a11y-fab):not(.a11y-panel){filter:invert(1) hue-rotate(180deg)!important}
+  body.a11y-dark > :not(.a11y-fab):not(.a11y-panel) img,body.a11y-dark > :not(.a11y-fab):not(.a11y-panel) svg{filter:invert(1) hue-rotate(180deg)}
+  body.a11y-mono > :not(.a11y-fab):not(.a11y-panel){filter:grayscale(1)!important}
+  body.a11y-links a{text-decoration:underline!important;outline:1px dashed currentColor;outline-offset:2px}
+  body.a11y-readable,body.a11y-readable *{font-family:Arial,sans-serif!important;letter-spacing:.02em}
+  body.a11y-spacing,body.a11y-spacing *{line-height:1.9!important;word-spacing:.15em}
+  body.a11y-noanim,body.a11y-noanim *{animation:none!important;transition:none!important}
+  body.a11y-bigcursor,body.a11y-bigcursor *{cursor:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><path d="M2 2l14 36 6-16 16-6z" fill="black" stroke="white" stroke-width="3"/></svg>') 4 4,auto!important}
+  .legal-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:10000;align-items:center;justify-content:center;padding:20px;direction:rtl;font-family:'Heebo',sans-serif}
+  .legal-box{background:#fff;border-radius:18px;max-width:680px;width:100%;max-height:88vh;overflow:hidden;display:flex;flex-direction:column}
+  .legal-head{background:#562E8C;color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}
+  .legal-head h2{margin:0;font-family:'Rubik',sans-serif;font-weight:800;font-size:1.2rem;color:#fff}
+  .legal-head button{background:rgba(255,255,255,.2);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer}
+  .legal-body{padding:24px;overflow-y:auto;line-height:1.75;color:#1A1230;font-size:.92rem}
+  .legal-body h3{font-family:'Rubik',sans-serif;font-weight:800;color:#562E8C;font-size:1rem;margin:18px 0 8px}
+  .legal-body p,.legal-body li{margin-bottom:8px}
+  .legal-body ul{padding-right:20px}
+  .legal-body strong{color:#EA6A4C}
+</style>
+
+<button class="a11y-fab" id="a11yFab" aria-label="פתח תפריט נגישות">♿</button>
+<aside class="a11y-panel" id="a11yPanel" role="dialog" aria-hidden="true">
+  <div class="a11y-panel-head"><h3>♿ הגדרות נגישות</h3><button class="a11y-close" id="a11yClose" aria-label="סגור">✕</button></div>
+  <div class="a11y-body">
+    <div class="a11y-group"><div class="a11y-group-title">🔍 גודל טקסט</div><div class="a11y-btns" style="grid-template-columns:1fr 1fr 1fr">
+      <button class="a11y-btn" data-toggle="font" data-val="normal"><span class="ico">A</span><span>רגיל</span></button>
+      <button class="a11y-btn" data-toggle="font" data-val="lg"><span class="ico">A+</span><span>גדול</span></button>
+      <button class="a11y-btn" data-toggle="font" data-val="xl"><span class="ico">A++</span><span>ענק</span></button>
+    </div></div>
+    <div class="a11y-group"><div class="a11y-group-title">🎨 ניגודיות</div><div class="a11y-btns">
+      <button class="a11y-btn" data-toggle="contrast"><span class="ico">⚡</span><span>ניגודיות גבוהה</span></button>
+      <button class="a11y-btn" data-toggle="dark"><span class="ico">🌙</span><span>מצב כהה</span></button>
+      <button class="a11y-btn" data-toggle="mono"><span class="ico">⚫</span><span>שחור-לבן</span></button>
+      <button class="a11y-btn" data-toggle="links"><span class="ico">🔗</span><span>הדגשת קישורים</span></button>
+    </div></div>
+    <div class="a11y-group"><div class="a11y-group-title">📖 קריאות</div><div class="a11y-btns">
+      <button class="a11y-btn" data-toggle="readable"><span class="ico">🔤</span><span>גופן קריא</span></button>
+      <button class="a11y-btn" data-toggle="spacing"><span class="ico">📐</span><span>ריווח שורות</span></button>
+      <button class="a11y-btn" data-toggle="noanim"><span class="ico">🛑</span><span>עצירת אנימציות</span></button>
+      <button class="a11y-btn" data-toggle="bigcursor"><span class="ico">🖱️</span><span>סמן גדול</span></button>
+    </div></div>
+    <button class="a11y-reset" id="a11yReset">🔙 איפוס</button>
+    <div class="a11y-statement"><strong>הצהרת נגישות:</strong> אתר זה הונגש לפי תקן ישראלי 5568 (WCAG 2.1 AA). רכז נגישות: יהודה איינהורן · <a href="tel:02-5023456">02-5023456</a> · <a href="mailto:o@ho-me.org.il">o@ho-me.org.il</a></div>
+  </div>
+</aside>
+
+<div class="legal-modal" id="legalModal" onclick="if(event.target===this)this.style.display='none'" role="dialog" aria-modal="true">
+  <div class="legal-box">
+    <div class="legal-head"><h2 id="legalTitle">תקנון</h2><button onclick="document.getElementById('legalModal').style.display='none'" aria-label="סגור">✕</button></div>
+    <div class="legal-body" id="legalBody"></div>
+  </div>
+</div>
+
+<script>
+window.LEGAL_TEXTS = {
+  takanon:`<h3>1. כללי</h3><p>השימוש באתר כפוף לתקנון זה. עצם השימוש מהווה הסכמה לתנאיו.</p><h3>2. אופי המידע</h3><p>המחשבונים והסכומים הם <strong>הכוונה כללית בלבד</strong> ואינם מהווים ייעוץ משפטי, רפואי, סוציאלי או מקצועי, ואינם תחליף לייעוץ פרטני.</p><h3>3. דיוק וט.ל.ח</h3><p>המידע מתעדכן בהתאם לסכומי 2026 של ב"ל ועשוי להשתנות בכל עת. <strong>ט.ל.ח</strong> — טעות לעולם חוזרת.</p><h3>4. פטור מאחריות</h3><p>החברה, בעליה ומפעיליה לא יישאו באחריות לכל נזק ישיר/עקיף משימוש או הסתמכות, לרבות אי-קבלת זכאות או פספוס מועדים.</p><h3>5. דין וסמכות שיפוט</h3><p>דיני ישראל בלבד · בתי משפט במחוז ירושלים.</p><h3>6. יצירת קשר</h3><p>הורה ומיוחד / מימושים · 02-5023456 · o@ho-me.org.il</p>`,
+  privacy:`<h3>1. מידע נאסף</h3><p>שם, טלפון, אימייל — רק כשתבחרו להזין באופן יזום. תשובות המחשבון לא נשמרות בשרת.</p><h3>2. שימוש</h3><p>יצירת קשר ע"י נציג מימושים לבירור זכויות.</p><h3>3. אבטחה</h3><p>הנתונים נשמרים ב-CRM Kaveret עם אבטחה מקובלת.</p><h3>4. אי-העברה</h3><p>לא יועבר לצד ג' אלא אם נדרש בדין.</p><h3>5. דיוור</h3><p>לפי חוק התקשורת (תיקון 40), משלוח דיוור פרסומי רק לאחר הסכמה. הסרה: o@ho-me.org.il.</p><h3>6. זכויות לפי חוק הגנת הפרטיות</h3><p>זכות לעיון, תיקון ומחיקה. פנו ל-o@ho-me.org.il.</p>`,
+  a11y:`<h3>נגישות</h3><p>אתר זה הונגש לפי תקן ישראלי 5568 (WCAG 2.1 AA).</p><h3>אמצעים זמינים</h3><ul><li>תפריט נגישות (♿)</li><li>הגדלת טקסט · 3 רמות</li><li>מצבי ניגודיות וצבע · הדגשת קישורים · גופן קריא · ריווח שורות · עצירת אנימציות · סמן גדול</li><li>תאימות לקוראי מסך וניווט מקלדת</li></ul><h3>רכז נגישות</h3><p><strong>יהודה איינהורן</strong> · <a href="tel:02-5023456">02-5023456</a> · <a href="mailto:o@ho-me.org.il">o@ho-me.org.il</a></p><h3>הגשת תלונה</h3><p>במקרה של אי-מענה תוך 45 ימים, ניתן לפנות לנציבות שוויון זכויות לאנשים עם מוגבלות במשרד המשפטים.</p>`
+};
+(function(){
+  const fab=document.getElementById('a11yFab'),panel=document.getElementById('a11yPanel'),close=document.getElementById('a11yClose'),reset=document.getElementById('a11yReset');
+  const TOGGLES=['contrast','dark','mono','links','readable','spacing','noanim','bigcursor'];
+  const FONT_SIZES=['normal','lg','xl'];
+  function apply(){const s=JSON.parse(localStorage.getItem('a11y')||'{}');TOGGLES.forEach(t=>document.body.classList.toggle('a11y-'+t,!!s[t]));FONT_SIZES.forEach(f=>document.documentElement.classList.toggle('a11y-font-'+f,s.font===f));document.querySelectorAll('.a11y-btn').forEach(b=>{const t=b.dataset.toggle,v=b.dataset.val;if(t==='font')b.classList.toggle('active',s.font===v||(!s.font&&v==='normal'));else b.classList.toggle('active',!!s[t]);});}
+  fab.addEventListener('click',()=>{panel.classList.add('open');});
+  close.addEventListener('click',()=>{panel.classList.remove('open');});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')panel.classList.remove('open');});
+  document.querySelectorAll('.a11y-btn').forEach(b=>b.addEventListener('click',()=>{const s=JSON.parse(localStorage.getItem('a11y')||'{}');const t=b.dataset.toggle,v=b.dataset.val;if(t==='font')s.font=v;else s[t]=!s[t];localStorage.setItem('a11y',JSON.stringify(s));apply();}));
+  reset.addEventListener('click',()=>{localStorage.removeItem('a11y');apply();});
+  apply();
+})();
+</script>
+
+<!-- ============== מרכז קישורי "השארת פרטים" ============== -->
+<!-- כל קישור עם href="#lead" באתר יעודכן אוטומטית ל-LEAD_URL.
+     כשתצא מערכת ה-CRM החדשה — מחליפים רק את השורה הזו ומפעילים בכל האתר. -->
+<script>
+  window.LEAD_URL = "https://cloud.kaveret.biz/contact-forms/9452/%D7%93%D7%A3%20%D7%A0%D7%97%D7%99%D7%AA%D7%94%20%D7%94%D7%95%D7%A8%D7%94%20%D7%95%D7%9E%D7%99%D7%95%D7%97%D7%93"; // TODO: להחליף ל-URL של ה-CRM החדש
+  document.querySelectorAll('a[href="#lead"]').forEach(a => { a.href = window.LEAD_URL; });
+</script>
+</body>
+</html>
