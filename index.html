@@ -1087,7 +1087,6 @@
     </nav>
 
     <div class="nav-cta">
-      <a href="mimushim.html" class="btn btn-yellow brand-switch" style="padding:11px 18px;font-size:.85rem;min-height:42px">💰 למימוש זכויות — מימושים</a>
       <button class="menu-toggle" id="menuToggle" aria-label="פתח תפריט" aria-expanded="false">
         <span></span>
       </button>
@@ -1119,10 +1118,7 @@
           אני <strong>יהודה איינהורן</strong>, אבא ליענקי המתמודד עם שיתוק מוחין. מתוך המסע האישי שלנו הקמתי את עמותת <strong>"הורה ומיוחד"</strong> ואת חברת <strong>"מימושים"</strong> — בית של ידע, תמיכה ומימוש זכויות לאלפי משפחות מיוחדות. <a href="#story" style="color:var(--brand-yellow);font-weight:700;text-decoration:underline">לסיפור המלא ←</a>
         </p>
         <div class="hero-ctas">
-          <a href="mimushim.html" class="btn btn-yellow">
-            למימוש זכויות — מימושים <span class="arrow">←</span>
-          </a>
-          <a href="#amuta" class="btn" style="background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.3)">לפעילויות הקהילה</a>
+          <a href="#amuta" class="btn btn-yellow">לפעילויות הקהילה <span class="arrow">←</span></a>
         </div>
         <div class="hero-stats">
           <div class="stat"><strong>2020</strong><span>שנת הקמה</span></div>
@@ -1631,6 +1627,9 @@
   .connect-card > p{color:rgba(255,255,255,.85);margin:0 0 16px;font-size:.95rem;line-height:1.6}
   .connect-card .news-card{background:rgba(255,255,255,.07)}
   #contact .contact-grid{align-items:stretch}
+  .contact-consent{display:flex;align-items:flex-start;gap:9px;margin-top:16px;font-size:.85rem;line-height:1.55;color:var(--ink-soft);cursor:pointer;text-align:right}
+  .contact-consent input{margin-top:3px;width:17px;height:17px;flex-shrink:0;accent-color:var(--brand-purple);cursor:pointer}
+  .contact-consent a{color:var(--brand-purple);text-decoration:underline;font-weight:600}
 </style>
 <section class="section" id="contact">
   <div class="container">
@@ -1663,6 +1662,10 @@
             <textarea id="message" name="message" required></textarea>
           </div>
         </div>
+        <label class="contact-consent">
+          <input type="checkbox" id="consent" name="consent" required>
+          <span>אני מאשר/ת קבלת עדכונים ותוכן שיווקי במייל ובהודעות מ"הורה ומיוחד", ומבין/ה שאוכל להסיר את עצמי בכל עת, בהתאם ל<a href="#legal-privacy" onclick="document.getElementById('legalModal').style.display='flex';document.getElementById('legalTitle').textContent='מדיניות פרטיות';document.getElementById('legalBody').innerHTML=window.LEGAL_TEXTS.privacy;return false">מדיניות הפרטיות</a>. *</span>
+        </label>
         <button type="submit" class="btn btn-primary btn-block" style="margin-top:18px">שלח הודעה <span class="arrow">←</span></button>
       </form>
 
@@ -1850,9 +1853,25 @@
 
 <script>
 /* הרשמה לניוזלטר — placeholder עד חיבור לרב-מסר */
+/* === שליחה שקטה לגוגל-פורמס (כלי איסוף נתונים, נסתר מהמשתמש) === */
+window.GFORM_ACTION='https://docs.google.com/forms/d/e/1FAIpQLSe5AwpEtnqMhNBiXautOXTIb-e6URbwYtbZNq361QEqqAWhdQ/formResponse';
+window.GFORM_MAP={type:'entry.1477666269',name:'entry.1196494233',phone:'entry.1480221884',email:'entry.545485552',message:'entry.1010706641',consent:'entry.615742920'};
+function sendToGForm(data){
+  try{
+    var body=new URLSearchParams();
+    Object.keys(data).forEach(function(k){
+      var nm=window.GFORM_MAP[k], v=data[k];
+      if(nm&&v!=null&&v!=='') body.append(nm, v);
+    });
+    fetch(window.GFORM_ACTION,{method:'POST',mode:'no-cors',body:body,keepalive:true});
+  }catch(e){}
+}
 function handleNewsletter(e){
   e.preventDefault();
   var form=e.target, ok=document.getElementById('newsOk');
+  var nm=(form.querySelector('[name="news-name"]')||{}).value||'';
+  var em=(form.querySelector('[name="news-email"]')||{}).value||'';
+  sendToGForm({type:'הרשמה לניוזלטר', name:nm, email:em, consent:'כן'});
   form.style.display='none';
   if(ok) ok.style.display='block';
   return false;
@@ -1929,29 +1948,18 @@ function handleNewsletter(e){
     var form = e.target;
     var val = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; };
     var name = val('name'), phone = val('phone'), email = val('email'), message = val('message');
+    var consentEl = document.getElementById('consent');
+    var consent = (consentEl && consentEl.checked) ? 'כן' : '';
 
-    // נתוני המשתמש נכנסים אך ורק ל-URL דרך encodeURIComponent (לא ל-innerHTML) — כדי למנוע הזרקת קוד.
-    var parts = ['פנייה חדשה מהאתר — הורה ומיוחד', 'שם: ' + name, 'טלפון: ' + phone];
-    if(email) parts.push('אימייל: ' + email);
-    parts.push('הודעה: ' + message);
-    var summary = parts.join('\n');
+    // שליחה שקטה לגוגל-פורמס (כלי איסוף הנתונים, כולל אישור הדיוור)
+    if(typeof sendToGForm==='function') sendToGForm({type:'פנייה מהאתר', name:name, phone:phone, email:email, message:message, consent:consent});
 
-    var waUrl = 'https://api.whatsapp.com/send?phone=97225023456&text=' + encodeURIComponent(summary);
-    var mailUrl = 'mailto:a@ho-me.org.il?subject=' + encodeURIComponent('פנייה חדשה מהאתר — ' + (name || 'הורה')) + '&body=' + encodeURIComponent(summary);
-
-    form.innerHTML = '<div style="text-align:center;padding:30px 14px">'
-      + '<div style="font-size:2.6rem;margin-bottom:10px">📨</div>'
-      + '<h3 style="color:var(--brand-purple);margin-bottom:8px">כמעט שם — נותרה לחיצה אחת</h3>'
-      + '<p style="color:var(--ink-soft);margin-bottom:18px">הפרטים מוכנים. בחרו ערוץ והפנייה תגיע אלינו ישירות:</p>'
-      + '<div style="display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto">'
-      + '<a id="leadWa" target="_blank" rel="noopener" class="btn" style="background:#25d366;color:#fff">💬 שליחה בוואטסאפ</a>'
-      + '<a id="leadMail" class="btn btn-ghost">✉️ שליחה במייל</a>'
-      + '</div>'
-      + '<p style="font-size:.78rem;color:var(--ink-soft);margin-top:14px">או חייגו: <a href="tel:02-5023456" style="color:var(--brand-purple);font-weight:700">02-5023456</a></p>'
+    // הודעת הצלחה
+    form.innerHTML = '<div style="text-align:center;padding:40px 16px">'
+      + '<div style="font-size:3rem;margin-bottom:12px">✅</div>'
+      + '<h3 style="color:var(--brand-purple);margin-bottom:10px">הפנייה התקבלה בהצלחה!</h3>'
+      + '<p style="color:var(--ink-soft)">תודה — קיבלנו את הפרטים ונחזור אליכם בהקדם.</p>'
       + '</div>';
-
-    var wa = document.getElementById('leadWa'); if(wa) wa.href = waUrl;
-    var ml = document.getElementById('leadMail'); if(ml) ml.href = mailUrl;
   }
 </script>
 
