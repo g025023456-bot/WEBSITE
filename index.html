@@ -4,8 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#562E8C" />
-<title>הורה ומיוחד — הבית של הורי העל | קהילה, פעילויות ותמיכה למשפחות עם ילדים מיוחדים</title>
-<meta name="description" content="עמותת הורה ומיוחד — הבית של הורי העל: קהילה תומכת, כנסים ושבתות נופש, סדנאות העצמה וקידום חקיקה למשפחות עם ילדים בעלי צרכים מיוחדים. למימוש זכויות — מימושים." />
+<title>הורה ומיוחד — קהילה ותמיכה למשפחות עם ילדים מיוחדים | ע"ר 580715282</title>
+<meta name="description" content="עמותת הורה ומיוחד (ע"ר 580715282) — הבית של הורי העל: קהילה תומכת, כנסים, שבתות נופש, סדנאות העצמה וקידום חקיקה למשפחות עם ילדים בעלי צרכים מיוחדים." />
 <meta name="robots" content="index,follow,max-image-preview:large" />
 <meta name="author" content="הורה ומיוחד / מימושים" />
 <meta name="keywords" content="הורה ומיוחד, עמותה לילדים מיוחדים, קהילת הורים, ילדים עם צרכים מיוחדים, כנסים והורים, שבת נופש, סדנאות העצמה, קידום חקיקה, תרומה לעמותה" />
@@ -15,8 +15,8 @@
 <link rel="icon" type="image/webp" href="logo-horeh-umeyuhad.webp" />
 
 <!-- Open Graph (שיתוף בפייסבוק/וואטסאפ) -->
-<meta property="og:title" content="הורה ומיוחד — הבית של הורי העל" />
-<meta property="og:description" content="עמותת 'הורה ומיוחד' וחברת 'מימושים' — הבית של הורי העל. מימוש זכויות, קהילה תומכת וקידום חקיקה למשפחות עם ילדים בעלי צרכים מיוחדים." />
+<meta property="og:title" content="הורה ומיוחד — קהילה ותמיכה למשפחות עם ילדים מיוחדים | ע"ר 580715282" />
+<meta property="og:description" content="עמותת הורה ומיוחד (ע"ר 580715282) — הבית של הורי העל: קהילה תומכת, כנסים, שבתות נופש, סדנאות העצמה וקידום חקיקה למשפחות עם ילדים בעלי צרכים מיוחדים." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://ho-me.org.il/" />
 <meta property="og:site_name" content="הורה ומיוחד · מימושים" />
@@ -167,7 +167,7 @@
   .nav{
     position:sticky;top:0;z-index:50;
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-    background:rgba(255,255,255,.88);
+    background:#fff;
     border-bottom:1px solid var(--line);
   }
   .nav-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:20px}
@@ -211,8 +211,18 @@
     .brand-sub{font-size:.65rem}
   }
 
-  .nav-links{display:flex;gap:28px;align-items:center}
-  .nav-links a{font-size:.95rem;font-weight:600;position:relative;padding:8px 0;color:var(--ink)}
+  .nav-links{display:flex;gap:24px;align-items:center}
+  .nav-links a{font-size:.95rem;font-weight:600;position:relative;padding:8px 0;color:var(--ink);
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  /* אייקוני הניווט — אחידים בגודל, לא מושכים תשומת לב מהטקסט */
+  .nav-ic{font-size:1rem;line-height:1;opacity:.85;transition:opacity .25s,transform .25s}
+  .nav-links a:hover .nav-ic{opacity:1;transform:translateY(-1px)}
+  .mobile-menu .nav-ic{font-size:1.15rem;margin-inline-end:4px}
+  @media (min-width:860px) and (max-width:1080px){
+    .nav-links{gap:16px}
+    .nav-links a{font-size:.88rem}
+    .nav-ic{font-size:.92rem}
+  }
   .nav-links a::after{
     content:"";position:absolute;bottom:0;right:0;left:0;height:2.5px;
     background:var(--brand-orange);transform:scaleX(0);transform-origin:right;
@@ -222,6 +232,15 @@
   .nav-links a:hover::after{transform:scaleX(1)}
 
   .nav-cta{display:flex;gap:10px;align-items:center}
+
+  /* ===== סימון העמוד הנוכחי בניווט ===== */
+  .nav-links a.is-active{color:var(--brand-purple);font-weight:800}
+  .nav-links a.is-active::before{content:"";position:absolute;top:-14px;right:0;left:0;height:3px;
+    background:var(--brand-purple);border-radius:0 0 3px 3px}
+  .nav-links a.is-active::after{transform:scaleX(1)}
+  .mobile-menu a.is-active{color:var(--brand-purple);font-weight:800;
+    border-inline-start:4px solid var(--brand-purple);padding-inline-start:12px}
+
 
   .menu-toggle{
     display:none;width:46px;height:46px;border-radius:12px;
@@ -322,6 +341,15 @@
     display:grid;grid-template-columns:repeat(2,1fr);gap:24px;
     padding-top:32px;border-top:1px solid rgba(255,255,255,.15);
     max-width:560px;
+  }
+  /* שלושה נתונים בשורה אחת */
+  .hero-stats-3{grid-template-columns:repeat(3,1fr);gap:18px;max-width:620px}
+  .hero-stats-3 .stat strong{font-size:clamp(1.5rem,3vw,2.1rem)}
+  .hero-stats-3 .stat span{font-size:.8rem}
+  @media (max-width:480px){
+    .hero-stats-3{gap:10px}
+    .hero-stats-3 .stat strong{font-size:1.35rem}
+    .hero-stats-3 .stat span{font-size:.72rem;line-height:1.35}
   }
   .stat strong{
     display:block;font-family:'Rubik',sans-serif;font-weight:900;
@@ -442,6 +470,33 @@
   .company .feature-icon{background:var(--brand-orange)}
   .feature-text strong{display:block;font-weight:700;margin-bottom:2px;font-size:.95rem;color:var(--ink)}
   .feature-text span{font-size:.85rem;color:var(--ink-soft);line-height:1.5}
+
+  /* ===== מידע רשמי (רשם העמותות / גיידסטאר) ===== */
+  .brand-card.official::before{background:linear-gradient(90deg,var(--brand-teal),var(--brand-purple-light))}
+  .brand-card.official .role{color:var(--brand-teal)}
+  .official-list{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:0}
+  .official-list li{display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+    padding:10px 0;border-bottom:1px dashed var(--line)}
+  .official-list li:last-child{border-bottom:none}
+  .official-list span{font-size:.88rem;color:var(--ink-soft);flex-shrink:0}
+  .official-list strong{font-family:'Rubik',sans-serif;font-weight:800;font-size:.95rem;color:var(--ink);text-align:left}
+  .official-list strong small{font-weight:600;color:var(--ink-soft);font-size:.78rem}
+  .official-badges{display:flex;flex-direction:column;gap:9px}
+  .ob{display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border-radius:12px;
+    font-weight:700;font-size:.86rem;line-height:1.35}
+  .ob small{font-weight:600;opacity:.85}
+  .ob-ok{background:rgba(45,143,95,.1);color:#2D8F5F;border:1px solid rgba(45,143,95,.25)}
+  /* מטרות רשמיות */
+  .official-goals{margin-top:26px;background:var(--white);border:1px solid var(--line);
+    border-right:5px solid var(--brand-teal);border-radius:var(--radius-md);padding:24px 26px}
+  .official-goals h4{font-family:'Rubik',sans-serif;font-weight:800;font-size:1.05rem;
+    color:var(--brand-purple);margin:0 0 10px}
+  .official-goals p{color:var(--ink);font-size:.95rem;line-height:1.75;margin:0 0 10px}
+  .og-src{font-size:.78rem;color:var(--ink-soft);font-style:italic}
+  @media (max-width:600px){
+    .official-list li{flex-direction:column;gap:2px;align-items:flex-start}
+    .official-list strong{text-align:right}
+  }
 
   /* ============================================
      SERVICES
@@ -1068,22 +1123,50 @@
     body{background:#fff;color:#000}
   }
 </style>
+<style id="i18n-css">
+  /* ===== עברית/English ===== */
+  .lang-en{display:none}
+  html[data-lang="en"] .lang-he{display:none !important}
+  html[data-lang="en"] .lang-en{display:inline !important}
+  html[data-lang="he"] .lang-en{display:none !important}
+  /* כפתור המתג */
+  .lang-switch{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:999px;
+    background:var(--brand-purple-soft);color:var(--brand-purple);font-weight:800;font-size:.85rem;
+    font-family:'Rubik',sans-serif;border:1.5px solid var(--line);cursor:pointer;transition:all .2s ease;line-height:1;white-space:nowrap}
+  .lang-switch:hover{background:var(--brand-purple);color:#fff;border-color:var(--brand-purple)}
+  .lang-switch .ls-globe{font-size:1.05rem}
+  .lang-switch.ls-mobile{width:100%;justify-content:center;margin-top:16px;padding:14px;font-size:1.05rem}
+  @media (max-width:859px){ .nav-cta .lang-switch{padding:7px 11px;font-size:.8rem} }
+  /* תיקוני LTR לאנגלית */
+  html[dir="ltr"] .nav-links a::after{transform-origin:left}
+  html[dir="ltr"] .story blockquote,html[dir="ltr"] .story-text blockquote{border-right:none;border-left:4px solid var(--brand-yellow)}
+  html[dir="ltr"] .story-text p{text-align:left}
+  html[dir="ltr"] .issue,html[dir="ltr"] .nl-item{border-right:1px solid var(--line);border-left:5px solid var(--brand-purple)}
+  html[dir="ltr"] .issue.new{border-left-color:var(--brand-orange)}
+  html[dir="ltr"] .official-goals{border-right:1px solid var(--line);border-left:5px solid var(--brand-teal)}
+  html[dir="ltr"] .official-list strong{text-align:right}
+  html[dir="ltr"] .signup-consent,html[dir="ltr"] .news-consent,html[dir="ltr"] .contact-consent{text-align:left}
+  html[dir="ltr"] .intro-banner{border-right:none;border-left:5px solid var(--brand-orange)}
+</style>
+<script>/* שפה לפני צביעה — מונע הבהוב */(function(){try{var l=localStorage.getItem('site-lang')==='en'?'en':'he';var d=document.documentElement;d.setAttribute('data-lang',l);d.setAttribute('lang',l);d.setAttribute('dir',l==='en'?'ltr':'rtl');}catch(e){}})();</script>
 </head>
 <body>
 
 <!-- ============== NAV ============== -->
 <header class="nav">
   <div class="container nav-inner">
-    <a href="#" class="brand" aria-label="הורה ומיוחד — ביחד אנחנו חזקים">
+    <a href="index.html" class="brand" aria-label="הורה ומיוחד — ביחד אנחנו חזקים">
       <img class="brand-logo" src="logo-horeh-umeyuhad.webp" alt="הורה ומיוחד — ביחד אנחנו חזקים">
-      <span class="brand-amuta-no">ע"ר 580715282</span>
+      <span class="brand-amuta-no"><span class="lang-he">ע"ר 580715282</span><span class="lang-en">Reg. Nonprofit 580715282</span></span>
     </a>
 
     <nav class="nav-links" aria-label="ניווט ראשי">
-      <a href="#about">אודותינו</a>
-      <a href="#amuta">פעילויות וקהילה</a>
-      <a href="#story">הסיפור שלנו</a>
-      <a href="#contact">צור קשר</a>
+      <a href="index.html"><span class="nav-ic" aria-hidden="true">🏠</span> <span class="lang-he">בית</span><span class="lang-en">Home</span></a>
+      <a href="about.html"><span class="nav-ic" aria-hidden="true">ℹ️</span> <span class="lang-he">אודות</span><span class="lang-en">About</span></a>
+      <a href="activities.html"><span class="nav-ic" aria-hidden="true">🎉</span> <span class="lang-he">פעילויות</span><span class="lang-en">Activities</span></a>
+      <a href="media.html"><span class="nav-ic" aria-hidden="true">🎙️</span> <span class="lang-he">מדיה</span><span class="lang-en">Media</span></a>
+      <a href="newsletter/"><span class="nav-ic" aria-hidden="true">📩</span> <span class="lang-he">ניוזלטר</span><span class="lang-en">Newsletter</span></a>
+      <a href="contact.html"><span class="nav-ic" aria-hidden="true">✉️</span> <span class="lang-he">צור קשר</span><span class="lang-en">Contact</span></a>
     </nav>
 
     <div class="nav-cta">
@@ -1096,12 +1179,14 @@
 
 <!-- Mobile menu -->
 <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
-  <a href="#about">אודותינו</a>
-  <a href="#amuta">פעילויות וקהילה</a>
-  <a href="#story">הסיפור שלנו</a>
-  <a href="#contact">צור קשר</a>
-  <a href="mimushim.html" class="btn btn-primary btn-block">💰 למימוש זכויות — מימושים</a>
-  <a href="https://ultra.kesherhk.info/external/paymentPage/310815" class="btn btn-yellow btn-block" style="margin-top:12px">תרומה לעמותה 💙</a>
+  <a href="index.html"><span class="nav-ic" aria-hidden="true">🏠</span> <span class="lang-he">בית</span><span class="lang-en">Home</span></a>
+  <a href="about.html"><span class="nav-ic" aria-hidden="true">ℹ️</span> <span class="lang-he">אודות</span><span class="lang-en">About</span></a>
+  <a href="activities.html"><span class="nav-ic" aria-hidden="true">🎉</span> <span class="lang-he">פעילויות</span><span class="lang-en">Activities</span></a>
+  <a href="media.html"><span class="nav-ic" aria-hidden="true">🎙️</span> <span class="lang-he">מדיה</span><span class="lang-en">Media</span></a>
+  <a href="newsletter/"><span class="nav-ic" aria-hidden="true">📩</span> <span class="lang-he">ניוזלטר</span><span class="lang-en">Newsletter</span></a>
+  <a href="contact.html"><span class="nav-ic" aria-hidden="true">✉️</span> <span class="lang-he">צור קשר</span><span class="lang-en">Contact</span></a>
+  <a href="mimushim.html" class="btn btn-primary btn-block"><span class="lang-he">💰 אגף מימושים</span><span class="lang-en">💰 Mimushim — Rights Division</span></a>
+  <a href="https://ultra.kesherhk.info/external/paymentPage/310815" class="btn btn-yellow btn-block" style="margin-top:12px"><span class="lang-he">תרומה לעמותה 💙</span><span class="lang-en">Donate 💙</span></a>
 </div>
 
 <!-- ============== HERO ============== -->
@@ -1110,21 +1195,20 @@
     <div class="hero-grid">
       <div class="hero-text reveal">
         <h1 class="hero-title display">
-          הזכות שלך<br>
-          <span class="accent">הכוח שלנו</span>
+          <span class="lang-he">הזכות שלך</span><span class="lang-en">Your Right</span><br>
+          <span class="accent"><span class="lang-he">הכוח שלנו</span><span class="lang-en">Our Strength</span></span>
         </h1>
-        <p class="hero-tagline">— ביחד אנחנו חזקים</p>
+        <p class="hero-tagline"><span class="lang-he">— ביחד אנחנו חזקים</span><span class="lang-en">— Together we are strong</span></p>
         <p class="hero-sub">
-          אני <strong>יהודה איינהורן</strong>, אבא ליענקי המתמודד עם שיתוק מוחין. מתוך המסע האישי שלנו הקמתי את עמותת <strong>"הורה ומיוחד"</strong> ואת חברת <strong>"מימושים"</strong> — בית של ידע, תמיכה ומימוש זכויות לאלפי משפחות מיוחדות. <a href="#story" style="color:var(--brand-yellow);font-weight:700;text-decoration:underline">לסיפור המלא ←</a>
+          <span class="lang-he">אני <strong>יהודה איינהורן</strong>, אבא ליענקי המתמודד עם שיתוק מוחין. מתוך המסע האישי שלנו הקמתי את עמותת <strong>"הורה ומיוחד"</strong> ואת חברת <strong>"מימושים"</strong> — בית של ידע, תמיכה ומימוש זכויות לאלפי משפחות מיוחדות.</span><span class="lang-en">I’m <strong>Yehuda Einhorn</strong>, father to Yanki, who lives with cerebral palsy. Out of our personal journey I founded the <strong>Horeh uMeyuhad</strong> nonprofit and the <strong>Mimushim</strong> company — a home of knowledge, support and rights realization for thousands of special families.</span> <a href="#story" style="color:var(--brand-yellow);font-weight:700;text-decoration:underline"><span class="lang-he">לסיפור המלא ←</span><span class="lang-en">Read the full story →</span></a>
         </p>
         <div class="hero-ctas">
-          <a href="#amuta" class="btn btn-yellow">לפעילויות הקהילה <span class="arrow">←</span></a>
+          <a href="#amuta" class="btn btn-yellow"><span class="lang-he">לפעילויות הקהילה</span><span class="lang-en">Community activities</span> <span class="arrow">←</span></a>
         </div>
-        <div class="hero-stats">
-          <div class="stat"><strong>2020</strong><span>שנת הקמה</span></div>
-          <div class="stat"><strong>אלפי</strong><span>משפחות בקהילה</span></div>
-          <div class="stat"><strong>עשרות</strong><span>אירועים ופעילויות בשנה</span></div>
-          <div class="stat"><strong>2</strong><span>משרדים — ירושלים ובית שמש</span></div>
+        <div class="hero-stats hero-stats-3">
+          <div class="stat"><strong>2020</strong><span><span class="lang-he">שנת הקמה</span><span class="lang-en">Founded</span></span></div>
+          <div class="stat"><strong><span class="lang-he">אלפי</span><span class="lang-en">1000s</span></strong><span><span class="lang-he">משפחות בקהילה</span><span class="lang-en">of families</span></span></div>
+          <div class="stat"><strong><span class="lang-he">עשרות</span><span class="lang-en">Dozens</span></strong><span><span class="lang-he">אירועים בשנה</span><span class="lang-en">of events a year</span></span></div>
         </div>
       </div>
 
@@ -1221,15 +1305,15 @@
 
         <div class="hero-art-card card-1">
           <div class="icon">🤝</div>
-          <div>קהילה חמה</div>
+          <div><span class="lang-he">קהילה חמה</span><span class="lang-en">Warm community</span></div>
         </div>
         <div class="hero-art-card card-2">
           <div class="icon">★</div>
-          <div>מאז 2020</div>
+          <div><span class="lang-he">מאז 2020</span><span class="lang-en">Since 2020</span></div>
         </div>
         <div class="hero-art-card card-3">
           <div class="icon">♥</div>
-          <div>אלפי משפחות</div>
+          <div><span class="lang-he">אלפי משפחות</span><span class="lang-en">Thousands of families</span></div>
         </div>
       </div>
     </div>
@@ -1264,143 +1348,32 @@
 <section class="paths" aria-label="מסלולי כניסה">
   <div class="container">
     <div class="paths-head reveal">
-      <h2>איך נוכל לעזור?</h2>
-      <p>שלוש דרכים להיות חלק מ"הורה ומיוחד"</p>
+      <h2><span class="lang-he">איך נוכל לעזור?</span><span class="lang-en">How can we help?</span></h2>
+      <p><span class="lang-he">שלוש דרכים להיות חלק מ"הורה ומיוחד"</span><span class="lang-en">Three ways to be part of Horeh uMeyuhad</span></p>
     </div>
     <div class="paths-grid">
       <a href="mimushim.html" class="path-card path-rights reveal">
         <div class="path-ico">💰</div>
-        <h3>מימוש זכויות</h3>
-        <p>בדקו בחינם לאילו קצבאות והטבות אתם זכאים — וקבלו ליווי מקצועי עד קבלת הכסף.</p>
-        <span class="path-go">לאתר מימושים ←</span>
+        <h3><span class="lang-he">מימוש זכויות</span><span class="lang-en">Rights Realization</span></h3>
+        <p><span class="lang-he">בדקו בחינם לאילו קצבאות והטבות אתם זכאים — וקבלו ליווי מקצועי עד קבלת הכסף.</span><span class="lang-en">Check for free which allowances and benefits you are entitled to — with professional guidance until the money arrives.</span></p>
+        <span class="path-go"><span class="lang-he">לאגף מימושים ←</span><span class="lang-en">To Mimushim →</span></span>
       </a>
       <a href="#amuta" class="path-card path-activity reveal">
         <div class="path-ico">🎉</div>
-        <h3>פעילות הקהילה</h3>
-        <p>כנסים, שבתות נופש, סדנאות העצמה ואירועים לכל המשפחה. לא נשארים לבד.</p>
-        <span class="path-go">לפעילויות העמותה ←</span>
+        <h3><span class="lang-he">פעילות הקהילה</span><span class="lang-en">Community Life</span></h3>
+        <p><span class="lang-he">כנסים, שבתות נופש, סדנאות העצמה ואירועים לכל המשפחה. לא נשארים לבד.</span><span class="lang-en">Conferences, family retreats, empowerment workshops and events. You are never alone.</span></p>
+        <span class="path-go"><span class="lang-he">לפעילויות העמותה ←</span><span class="lang-en">See our activities →</span></span>
       </a>
       <a href="https://ultra.kesherhk.info/external/paymentPage/310815" target="_blank" rel="noopener" class="path-card path-donate reveal">
         <div class="path-ico">💙</div>
-        <h3>תרומה ושותפות</h3>
-        <p>כל תרומה מאפשרת לנו ללוות, להעצים ולהביא זכויות למשפחות שזקוקות לזה.</p>
-        <span class="path-go">לתרומה לעמותה ←</span>
+        <h3><span class="lang-he">תרומה ושותפות</span><span class="lang-en">Donate & Partner</span></h3>
+        <p><span class="lang-he">כל תרומה מאפשרת לנו ללוות, להעצים ולהביא זכויות למשפחות שזקוקות לזה.</span><span class="lang-en">Every donation lets us guide, empower and bring rights to families who need it.</span></p>
+        <span class="path-go"><span class="lang-he">לתרומה לעמותה ←</span><span class="lang-en">Donate now →</span></span>
       </a>
     </div>
   </div>
 </section>
 
-<!-- ============== TWO BRANDS ============== -->
-<section class="section brands" id="about">
-  <div class="container">
-    <div class="section-head reveal">
-      <span class="eyebrow">שני מותגים · שליחות אחת</span>
-      <h2>כשאנחנו יחד <em>זה מיוחד</em></h2>
-      <p>הסיפור התחיל מבית אחד — של יהודה איינהורן, אבא ליענקי המתמודד עם שיתוק מוחין. מתוך הקושי האישי צמחה שליחות, וכך נולדו שתי הזרועות של הבית.</p>
-    </div>
-
-    <div class="brands-grid">
-
-      <article class="brand-card organization reveal">
-        <div class="brand-visual">
-          <svg viewBox="0 0 400 225" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
-            <rect width="400" height="225" fill="#562E8C"/>
-            <!-- Decorative shapes (matching prospectus) -->
-            <rect x="30" y="30" width="42" height="42" rx="8" fill="#A78EC9"/>
-            <circle cx="105" cy="42" r="18" fill="#EA6A4C"/>
-            <rect x="320" y="170" width="42" height="42" rx="8" fill="#1CA6A6"/>
-            <!-- Three children figures (community) -->
-            <g transform="translate(120,130)">
-              <circle cx="0" cy="-15" r="16" fill="#FCD9B0"/>
-              <ellipse cx="0" cy="-30" rx="10" ry="3.5" fill="#1A1230"/>
-              <rect x="-18" y="0" width="36" height="38" rx="5" fill="#FFD455"/>
-            </g>
-            <g transform="translate(200,125)">
-              <circle cx="0" cy="-15" r="17" fill="#FCD9B0"/>
-              <ellipse cx="0" cy="-31" rx="11" ry="4" fill="#1A1230"/>
-              <rect x="-19" y="0" width="38" height="40" rx="5" fill="#1CA6A6"/>
-            </g>
-            <g transform="translate(280,130)">
-              <circle cx="0" cy="-15" r="16" fill="#FCD9B0"/>
-              <ellipse cx="0" cy="-30" rx="10" ry="3.5" fill="#1A1230"/>
-              <rect x="-18" y="0" width="36" height="38" rx="5" fill="#EA6A4C"/>
-            </g>
-            <text x="200" y="205" text-anchor="middle" font-family="Rubik, sans-serif" font-size="18" font-weight="800" fill="#FFD455">קהילה · אהבה · תמיכה</text>
-          </svg>
-        </div>
-        <span class="role">העמותה · הקהילה התומכת</span>
-        <h3>הורה ומיוחד <span style="font-size:.62rem;font-weight:700;color:var(--ink-soft);white-space:nowrap">· ע"ר 580715282</span></h3>
-        <p>הבית של הורי העל. מרכז של ידע, תמיכה והעצמה — קהילה תומכת המאגדת אלפי משפחות מכל קשת המוגבלויות. ביחד אנחנו חזקים.</p>
-        <div class="features">
-          <div class="feature">
-            <div class="feature-icon">🤝</div>
-            <div class="feature-text"><strong>קהילה דיגיטלית פעילה</strong><span>קבוצות וואטסאפ ומייל המחברים אלפי הורים</span></div>
-          </div>
-          <div class="feature">
-            <div class="feature-icon">🎉</div>
-            <div class="feature-text"><strong>כנסים ושבתות נופש</strong><span>אירועי ענק, סדנאות, ערבי העצמה והפנינג זוגי</span></div>
-          </div>
-          <div class="feature">
-            <div class="feature-icon">📋</div>
-            <div class="feature-text"><strong>קידום חקיקה</strong><span>ניירות עמדה, ועדות בכנסת ולובינג מקצועי</span></div>
-          </div>
-          <div class="feature">
-            <div class="feature-icon">♿</div>
-            <div class="feature-text"><strong>הנגשה ומודעות</strong><span>תקנות תחבורה, סל טיפולים והרחבת זכויות</span></div>
-          </div>
-        </div>
-      </article>
-
-      <article class="brand-card company reveal">
-        <div class="brand-visual">
-          <svg viewBox="0 0 400 225" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
-            <rect width="400" height="225" fill="#3F1F66"/>
-            <!-- Decorative -->
-            <rect x="30" y="40" width="38" height="38" rx="8" fill="#EA6A4C"/>
-            <circle cx="350" cy="55" r="16" fill="#FFD455"/>
-            <rect x="340" y="160" width="32" height="42" rx="6" fill="#A78EC9"/>
-            <!-- Document & checkmark -->
-            <g transform="translate(200,112)">
-              <rect x="-55" y="-65" width="110" height="135" rx="10" fill="#FFFFFF"/>
-              <line x1="-40" y1="-40" x2="40" y2="-40" stroke="#562E8C" stroke-width="2.5" opacity=".3"/>
-              <line x1="-40" y1="-25" x2="20" y2="-25" stroke="#562E8C" stroke-width="2.5" opacity=".3"/>
-              <line x1="-40" y1="-10" x2="35" y2="-10" stroke="#562E8C" stroke-width="2.5" opacity=".3"/>
-              <circle cx="0" cy="35" r="22" fill="#FFD455"/>
-              <path d="M -10 35 L -3 42 L 12 28" stroke="#1A1230" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            </g>
-            <text x="200" y="208" text-anchor="middle" font-family="Rubik, sans-serif" font-size="17" font-weight="800" fill="#FFD455">+90% הצלחה</text>
-          </svg>
-        </div>
-        <span class="role">החברה · מימוש זכויות מקצועי</span>
-        <h3>מימושים</h3>
-        <p>נבחרת מומחים בעלת מוניטין של עשור. מתמחים אך ורק בילדים, מכל סוגי הלקויות מאלרגיות ועד אוטיזם. ההתמחות המצומצמת היא סוד הכוח שלנו.</p>
-        <div class="features">
-          <div class="feature">
-            <div class="feature-icon">💰</div>
-            <div class="feature-text"><strong>קצבאות וזכויות</strong><span>קצבת ילד נכה, ניידות, שכר דירה ועוד</span></div>
-          </div>
-          <div class="feature">
-            <div class="feature-icon">🎓</div>
-            <div class="feature-text"><strong>סיוע חינוכי</strong><span>סייעות, ועדות אפיון ואישור סל אישי</span></div>
-          </div>
-          <div class="feature">
-            <div class="feature-icon">🏠</div>
-            <div class="feature-text"><strong>פתרונות הנגשה</strong><span>התאמת דירות וציוד עזר במימון</span></div>
-          </div>
-          <div class="feature">
-            <div class="feature-icon">⚖️</div>
-            <div class="feature-text"><strong>ערעורים והכוונה משפטית</strong><span>ליווי מהאבחון ועד קבלת התקציב</span></div>
-          </div>
-        </div>
-        <a href="mimushim.html" class="btn btn-yellow" style="margin-top:18px;align-self:flex-start">לאתר מימושים <span class="arrow">←</span></a>
-      </article>
-
-    </div>
-    <button type="button" class="show-more-btn" data-target=".brands-grid" data-more="עוד עלינו" data-less="צמצם"><span class="sm-label">עוד עלינו</span> <span class="sm-arrow">↓</span></button>
-  </div>
-</section>
-
-<!-- ============== עמותה ופעילויות (גרסה חדשה 3.6.2026) — הועבר למעלה ============== -->
 <style id="amuta-styles">
   /* מסלול העמותה — בלוק חדש, מבודד לצורך השוואה */
   .amuta{background:linear-gradient(180deg,var(--white),var(--bg-2))}
@@ -1426,6 +1399,14 @@
   .gallery-more{display:flex !important;align-items:center;justify-content:center;gap:8px;max-width:300px;margin:0 auto 40px;padding:12px 26px;border-radius:999px;background:var(--brand-purple-soft);color:var(--brand-purple);font-weight:700;font-size:.95rem;border:1px solid var(--line);cursor:pointer;font-family:inherit;transition:transform .2s}
   .gallery-more[hidden]{display:none !important}
   .gallery-more:hover{transform:translateY(-2px)}
+  /* טעימת גלריה בדף הבית (3 תמונות) + קישור לגלריה המלאה */
+  .gallery-teaser{margin-bottom:14px}
+  .gallery-teaser .gallery-tile{text-decoration:none;color:#fff;transition:transform .25s ease,box-shadow .25s ease}
+  .gallery-teaser .gallery-tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+  .gallery-all{display:block;width:fit-content;margin:0 auto 40px;padding:11px 26px;border-radius:999px;
+    background:var(--brand-purple-soft);color:var(--brand-purple);font-weight:800;font-size:.92rem;
+    text-decoration:none;border:1px solid var(--line);transition:transform .2s ease}
+  .gallery-all:hover{transform:translateY(-2px);background:var(--brand-purple);color:#fff}
   .gallery-tile{position:relative;aspect-ratio:4/3;border-radius:var(--radius-md);overflow:hidden;
     display:flex;align-items:flex-end;color:#fff;font-weight:700;font-size:.95rem;
     padding:14px;text-shadow:0 1px 6px rgba(0,0,0,.55)}
@@ -1443,6 +1424,73 @@
     box-shadow:var(--shadow-sm);transition:transform .2s}
   .press-chip:hover{transform:translateY(-2px)}
   .press-note{font-size:.82rem;color:var(--ink-soft);text-align:center;margin:6px 0 40px}
+  /* רשימת גיליונות הניוזלטר (בדף הבית) */
+  .nl-list{display:grid;gap:12px;max-width:860px;margin:0 auto 14px}
+  .nl-list.collapsed > .nl-item:nth-child(n+4){display:none}
+  .nl-item{display:flex;flex-direction:column;gap:3px;background:var(--white);
+    border:1px solid var(--line);border-right:5px solid var(--brand-purple);
+    border-radius:var(--radius-md);padding:16px 20px;text-decoration:none;color:inherit;
+    transition:transform .2s ease,box-shadow .2s ease}
+  .nl-item:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+  .nl-item.newest{border-right-color:var(--brand-orange)}
+  .nl-meta{font-size:.76rem;font-weight:800;color:var(--ink-soft)}
+  .nl-tag{display:inline-block;background:var(--brand-orange);color:#fff;font-size:.62rem;
+    font-weight:800;padding:2px 8px;border-radius:4px;margin-inline-start:6px;vertical-align:middle}
+  .nl-ttl{font-family:'Rubik',sans-serif;font-weight:800;font-size:1.02rem;color:var(--brand-purple);line-height:1.35}
+  .nl-sub{font-size:.87rem;color:var(--ink-soft);line-height:1.5}
+  .nl-more{display:flex !important;align-items:center;justify-content:center;gap:8px;max-width:300px;
+    margin:0 auto 40px;padding:12px 26px;border-radius:999px;background:var(--brand-purple-soft);
+    color:var(--brand-purple);font-weight:700;font-size:.95rem;border:1px solid var(--line);
+    cursor:pointer;font-family:inherit;transition:transform .2s}
+  .nl-more[hidden]{display:none !important}
+  .nl-more:hover{transform:translateY(-2px)}
+  /* רצועת מדיה קומפקטית — לא בשימוש בגרסת העמוד האחד, נשמר למקרה חזרה */
+  .media-strip{display:flex;align-items:center;gap:18px;max-width:860px;margin:0 auto 40px;
+    background:linear-gradient(135deg,var(--brand-purple) 0%,var(--brand-purple-deep) 100%);
+    border-radius:var(--radius-lg);padding:22px 26px;text-decoration:none;color:#fff;
+    box-shadow:var(--shadow-sm);transition:transform .2s ease,box-shadow .2s ease;position:relative;overflow:hidden}
+  .media-strip::before{content:"";position:absolute;top:-70px;left:-70px;width:240px;height:240px;
+    background:radial-gradient(circle,rgba(255,212,85,.16),transparent 62%);pointer-events:none}
+  .media-strip:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+  .ms-ico{width:52px;height:52px;border-radius:16px;background:var(--brand-yellow);flex-shrink:0;
+    display:grid;place-items:center;font-size:1.6rem;position:relative;z-index:2}
+  .ms-text{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;position:relative;z-index:2}
+  .ms-eyebrow{font-size:.72rem;font-weight:800;letter-spacing:.08em;color:var(--brand-yellow);text-transform:uppercase}
+  .ms-title{font-family:'Rubik',sans-serif;font-weight:800;font-size:1.02rem;line-height:1.35;color:#fff}
+  .ms-sub{font-size:.85rem;color:rgba(255,255,255,.78);line-height:1.5}
+  .ms-go{flex-shrink:0;font-weight:800;font-size:.88rem;color:var(--brand-yellow);white-space:nowrap;position:relative;z-index:2}
+  @media (max-width:700px){
+    .media-strip{flex-direction:column;align-items:flex-start;gap:12px;padding:20px}
+    .ms-go{align-self:stretch;text-align:center;background:var(--brand-yellow);color:var(--brand-purple-deep);
+      padding:11px;border-radius:999px;margin-top:4px}
+  }
+  /* פודקאסט "הנתינה" */
+  .podcast-card{background:linear-gradient(135deg,var(--brand-purple) 0%,var(--brand-purple-deep) 100%);
+    border-radius:var(--radius-lg);padding:clamp(26px,4vw,40px);margin:0 auto 40px;max-width:860px;
+    position:relative;overflow:hidden;box-shadow:var(--shadow-md)}
+  .podcast-card::before{content:"";position:absolute;top:-90px;left:-90px;width:320px;height:320px;
+    background:radial-gradient(circle,rgba(255,212,85,.18),transparent 62%);pointer-events:none}
+  .podcast-grid{position:relative;z-index:2;display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start}
+  .podcast-ico{width:66px;height:66px;border-radius:20px;background:var(--brand-yellow);
+    display:grid;place-items:center;font-size:2rem;flex-shrink:0;box-shadow:0 10px 24px -10px rgba(0,0,0,.5)}
+  .podcast-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.22);color:#fff;font-size:.74rem;font-weight:800;letter-spacing:.06em;
+    padding:5px 13px;border-radius:999px;margin-bottom:11px}
+  .podcast-card h4{font-family:'Rubik',sans-serif;font-weight:900;color:#fff;margin:0 0 9px;
+    font-size:clamp(1.15rem,2.4vw,1.55rem);line-height:1.25}
+  .podcast-meta{color:var(--brand-yellow);font-weight:700;font-size:.87rem;margin:0 0 11px}
+  .podcast-card p.podcast-desc{color:rgba(255,255,255,.86);font-size:.93rem;line-height:1.65;margin:0 0 18px}
+  .podcast-btns{display:flex;gap:11px;flex-wrap:wrap}
+  .podcast-btns a{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:999px;
+    font-weight:800;font-size:.9rem;text-decoration:none;transition:transform .2s ease}
+  .podcast-btns a:hover{transform:translateY(-2px)}
+  .pod-primary{background:var(--brand-yellow);color:var(--brand-purple-deep)}
+  .pod-secondary{background:rgba(255,255,255,.13);color:#fff;border:1px solid rgba(255,255,255,.3)}
+  @media (max-width:600px){
+    .podcast-grid{grid-template-columns:1fr;gap:14px}
+    .podcast-ico{width:54px;height:54px;font-size:1.6rem;border-radius:16px}
+    .podcast-btns a{width:100%;justify-content:center}
+  }
   /* CTA כפול */
   .amuta-ctas{display:grid;grid-template-columns:1fr 1fr;gap:18px}
   .amuta-cta{display:flex;flex-direction:column;gap:12px;align-items:flex-start;background:var(--white);
@@ -1467,6 +1515,11 @@
   .connect-community a{display:inline-flex;align-items:center;gap:7px;border-radius:999px;
     padding:10px 18px;font-weight:700;font-size:.88rem;color:#fff;text-decoration:none;transition:transform .2s}
   .connect-community a:hover{transform:translateY(-2px)}
+  /* קישור לארכיון הגיליונות */
+  .news-archive-link{display:inline-block;margin:0 0 14px;padding:9px 18px;border-radius:999px;
+    background:var(--brand-yellow);color:var(--brand-purple-deep);font-weight:800;font-size:.88rem;
+    text-decoration:none;transition:transform .2s ease}
+  .news-archive-link:hover{transform:translateY(-2px)}
   .ccm-wa{background:#25d366}
   .ccm-mail{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3)}
   /* טופס ניוזלטר */
@@ -1488,335 +1541,102 @@
   @media (max-width:600px){
     .gallery-grid.collapsed .gallery-tile:nth-child(n+3){display:none}
   }
-</style>
-<section class="section amuta" id="amuta">
+</style><section class="section amuta" id="trust">
   <div class="container">
-    <div class="section-head reveal">
-      <span class="eyebrow">העמותה · קהילה ופעילות</span>
-      <h2>לא רק זכויות — <em>בית</em></h2>
-      <p>מעבר למימוש הזכויות, "הורה ומיוחד" היא קהילה חיה: כנסים, שבתות נופש, סדנאות העצמה ופעילויות לכל המשפחה. כל זה קיים בזכות התורמים והשותפים שלנו.</p>
-    </div>
-
-    <!-- רצועת אימפקט -->
-    <div class="impact-band reveal">
-      <div class="impact-card hero-num">
-        <strong class="big">מעל 10 מיליון ₪</strong>
-        <span class="lbl">הוחזרו לכיס המשפחות</span>
-      </div>
-      <div class="impact-card">
-        <strong class="big">אלפי</strong>
-        <span class="lbl">משפחות בקהילה</span>
-      </div>
-      <div class="impact-card">
-        <strong class="big">עשרות</strong>
-        <span class="lbl">אירועים ופעילויות בשנה</span>
-      </div>
-      <div class="impact-card">
-        <strong class="big">קידום חקיקה</strong>
-        <span class="lbl">בכנסת ובוועדות</span>
-      </div>
-    </div>
-
-    <!-- סרטון נופש -->
-    <div class="amuta-video reveal">
-      <video controls preload="none" poster="gallery-noflesh.webp" playsinline>
-        <source src="video-noflesh.mp4" type="video/mp4">
-        הדפדפן שלך אינו תומך בנגן הווידאו.
-      </video>
-      <p class="video-cap">▶ רגעים משבת הנופש של "הורה ומיוחד"</p>
-    </div>
-
-    <!-- גלריית פעילויות -->
-    <h3 class="gallery-title reveal">רגעים מהשטח 📸</h3>
-    <div class="gallery-grid reveal" id="galleryGrid"></div>
-    <button type="button" class="show-more-btn gallery-more" data-target=".gallery-grid" data-more="עוד תמונות" data-less="הצג פחות" hidden><span class="sm-label">עוד תמונות</span> <span class="sm-arrow">↓</span></button>
-    <!-- הגלריה מתרנדרת אוטומטית מ-gallery-data.js — להוספת תמונה ערכו רק את הקובץ הזה -->
-    <script src="gallery-data.js"></script>
-    <script>
-    (function(){
-      var grid=document.getElementById('galleryGrid');
-      var btn=document.querySelector('.gallery-more');
-      var items=window.GALLERY_AMUTA||[];
-      if(!grid) return;
-      grid.innerHTML=items.map(function(it){
-        var safe=(it.cap||'').replace(/"/g,'&quot;');
-        return '<div class="gallery-tile"><img src="'+encodeURI(it.src)+'" alt="'+safe+'" loading="lazy"><span>'+safe+'</span></div>';
-      }).join('');
-      if(btn) btn.hidden = items.length<=6;  /* "הצג עוד" רק אם יש יותר מ-6 */
-    })();
-    </script>
-
-    <!-- פורסמנו אצל -->
-    <h3 class="press-title reveal">סיקרו אותנו</h3>
-    <div class="press-clip reveal">
-      <a href="https://www.jdn.co.il/flashes/1918098/" target="_blank" rel="noopener" aria-label="כתבה: שבת גיבוש ייחודית להורים">
-        <img src="press-shaharit.webp" alt="כתבה בעיתון שחרית — 'הורה ומיוחד' ערכו שבת גיבוש ייחודית להורים לילדים מיוחדים" loading="lazy">
-      </a>
-    </div>
-    <div class="press-row reveal">
-      <a href="https://www.jdn.co.il/flashes/1826726/" class="press-chip" target="_blank" rel="noopener">📰 JDN · האירוע השנתי — שמים את ההורים במרכז</a>
-      <a href="https://www.jdn.co.il/flashes/1918098/" class="press-chip" target="_blank" rel="noopener">📰 JDN · שבת גיבוש ייחודית להורים</a>
-      <a href="https://www.youtube.com/watch?v=L0SBEeAXlSc" class="press-chip" target="_blank" rel="noopener">🎬 צפו: הסיפור של יהודה ויענקי</a>
-    </div>
-
-    <!-- CTA כפול: פעילות + תרומה -->
-    <div class="amuta-ctas reveal">
-      <div class="amuta-cta">
-        <h3>🎉 הצטרפו לפעילות</h3>
-        <p>כנסים, נופשים וסדנאות — לא נשארים לבד. הירשמו ונעדכן אתכם על הפעילות הקרובה.</p>
-        <a href="#lead" class="btn btn-primary">להרשמה לפעילויות <span class="arrow">←</span></a>
-      </div>
-      <div class="amuta-cta">
-        <h3>💙 שותפים במשימה</h3>
-        <p>כל תרומה מאפשרת לנו להמשיך ללוות, להעצים ולהביא זכויות למשפחות שזקוקות לזה.</p>
-        <a href="https://ultra.kesherhk.info/external/paymentPage/310815" target="_blank" rel="noopener" class="btn btn-yellow">לתרומה לעמותה <span class="arrow">←</span></a>
-      </div>
-    </div>
-
-    <!-- סימן אמינות: עמותה רשומה + גיידסטאר -->
-    <div class="amuta-trust reveal">
-      <span class="trust-item">🛡️ עמותה רשומה · ע"ר 580715282</span>
-      <a href="https://www.guidestar.org.il/organization/580715282" target="_blank" rel="noopener" class="trust-item trust-link">✓ מאומת בגיידסטאר — אתר התאגידים של משרד המשפטים ↗</a>
-    </div>
+<!-- סימן אמינות: עמותה רשומה + גיידסטאר -->
+    <!-- רצועת האמון הוסרה 12/08 לבקשת יהודה — המידע קיים בפוטר ובעמוד אודות -->
 
   </div>
 </section>
 
-<!-- ============== STORY ============== -->
-<section class="section" id="story">
-  <div class="container">
-    <div class="story reveal">
-      <div class="story-grid">
-        <div class="story-portrait" style="position:relative">
-          <img src="story-yanki.webp" alt="יענקי, בנו של יהודה איינהורן, ברגע מרגש באירוע של 'הורה ומיוחד'" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">
-          <span style="position:absolute;inset-inline:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.65));color:#fff;font-family:'Rubik',sans-serif;font-weight:800;font-size:1.05rem;padding:30px 16px 14px;text-shadow:0 1px 4px rgba(0,0,0,.5)">יענקי שלי 💛</span>
-        </div>
-        <div>
-          <span class="story-eyebrow">המנכ"ל · הסיפור</span>
-          <h2>שמי יהודה איינהורן, <em>הסיפור שלנו</em></h2>
-          <p>כאבא ליענקי המתוק המתמודד עם שיתוק מוחין, גיליתי על בשרי עד כמה מורכב עולם הנגישות והבירוקרטיה בתחום. מתוך הקושי האישי צמחה שליחות — להקים בית מקצועי, חם ויעיל להורים המתמודדים עם מצבים דומים.</p>
-          <blockquote>"נכון, הילדים שלנו מיוחדים, יש להם צרכים מיוחדים שאין לילד רגיל — אבל על הדרך הם הפכו אותנו להורים מיוחדים."</blockquote>
-          <p>כך נוסדה <strong>"עמותת הורה ומיוחד"</strong>, ובהשקעה אדירה זכינו להקים קהילה תומכת המאגדת אלפי משפחות מכל קשת המוגבלויות. עם גדילת הקהילה עלה הצורך בזרוע מקצועית שתאבק על מימוש הזכויות — וכך נולדה חברת <strong>"מימושים"</strong>, נבחרת מומחים בעלת מוניטין של עשור.</p>
-          <div class="signature">
-            <div class="sig-mark">י.א</div>
-            <div class="sig-text">
-              <strong>יהודה איינהורן</strong>
-              <span>מנכ"ל · בית שמש</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <p class="yanki-strip-title">💛 הרגעים של יענקי</p>
-      <p class="yanki-strip-sub">מאחורי כל תיק שאנחנו מלווים — עומדת משפחה. יענקי הוא הסיבה שהכל התחיל, ולמענו ולמען אלפי משפחות כמונו אנחנו כאן.</p>
-      <div class="yanki-strip reveal">
-        <figure><img src="yanki-1.webp" alt="יהודה מאכיל את יענקי — רגע של אבא ובן" loading="lazy"></figure>
-        <figure><img src="yanki-3.webp" alt="יענקי המתוק בטיול" loading="lazy"></figure>
-        <figure><img src="yanki-2.webp" alt="יענקי המתוק בטיול משפחתי" loading="lazy"></figure>
-        <figure><img src="yanki-4.webp" alt="יענקי עם אחותו מלכי" loading="lazy"></figure>
-      </div>
-    </div>
   </div>
 </section>
-
-<!-- ============== CONTACT — מרכז מאוחד (גרסה חדשה 3.6.2026) ============== -->
-<style id="connect-card-styles">
-  .connect-card{background:var(--brand-purple);border-radius:var(--radius-lg);padding:30px;
-    display:flex;flex-direction:column;justify-content:center}
-  .connect-card h3{color:#fff;margin:0 0 8px;font-size:1.4rem}
-  .connect-card > p{color:rgba(255,255,255,.85);margin:0 0 16px;font-size:.95rem;line-height:1.6}
-  .connect-card .news-card{background:rgba(255,255,255,.07)}
-  #contact .contact-grid{align-items:stretch}
-  .contact-consent{display:flex;align-items:flex-start;gap:9px;margin-top:16px;font-size:.85rem;line-height:1.55;color:var(--ink-soft);cursor:pointer;text-align:right}
-  .contact-consent input{margin-top:3px;width:17px;height:17px;flex-shrink:0;accent-color:var(--brand-purple);cursor:pointer}
-  .contact-consent a{color:var(--brand-purple);text-decoration:underline;font-weight:600}
-</style>
-<section class="section" id="contact">
-  <div class="container">
-    <div class="section-head reveal">
-      <span class="eyebrow">צור קשר · הישארו מחוברים</span>
-      <h2>כל הדרכים להגיע אלינו — <em>במקום אחד</em></h2>
-      <p>השאירו הודעה ונחזור אליכם, הצטרפו לעדכונים החודשיים, או היכנסו לקהילה הפעילה. מה שנוח לכם.</p>
-    </div>
-    <div class="contact-grid">
-      <form class="contact-form reveal" onsubmit="handleSubmit(event)">
-        <h3>📝 שלחו לנו הודעה</h3>
-        <p class="sub">נחזור אליכם בהקדם עם תכנית פעולה מותאמת אישית.</p>
-        <div class="form-grid cols-2">
-          <div class="field">
-            <label for="name">שם מלא *</label>
-            <input id="name" name="name" type="text" required autocomplete="name">
-          </div>
-          <div class="field">
-            <label for="phone">טלפון *</label>
-            <input id="phone" name="phone" type="tel" required autocomplete="tel" inputmode="tel">
-          </div>
-        </div>
-        <div class="form-grid">
-          <div class="field">
-            <label for="email">אימייל</label>
-            <input id="email" name="email" type="email" autocomplete="email" inputmode="email">
-          </div>
-          <div class="field">
-            <label for="message">במה נוכל לעזור? *</label>
-            <textarea id="message" name="message" required></textarea>
-          </div>
-        </div>
-        <label class="contact-consent">
-          <input type="checkbox" id="consent" name="consent" required>
-          <span>אני מאשר/ת קבלת עדכונים ותוכן שיווקי במייל ובהודעות מ"הורה ומיוחד", ומבין/ה שאוכל להסיר את עצמי בכל עת, בהתאם ל<a href="#legal-privacy" onclick="document.getElementById('legalModal').style.display='flex';document.getElementById('legalTitle').textContent='מדיניות פרטיות';document.getElementById('legalBody').innerHTML=window.LEGAL_TEXTS.privacy;return false">מדיניות הפרטיות</a>. *</span>
-        </label>
-        <button type="submit" class="btn btn-primary btn-block" style="margin-top:18px">שלח הודעה <span class="arrow">←</span></button>
-      </form>
-
-      <div class="connect-card reveal">
-        <h3>📩 הישארו מחוברים</h3>
-        <p>הצטרפו לניוזלטר החודשי — עדכוני זכויות, שינויי חקיקה ופעילויות קרובות. ישר למייל, בחינם.</p>
-        <div class="news-card">
-          <form class="news-form" onsubmit="handleNewsletter(event)">
-            <input type="text" name="news-name" placeholder="שם מלא" required autocomplete="name" aria-label="שם מלא">
-            <input type="email" name="news-email" placeholder="כתובת המייל שלכם" required autocomplete="email" inputmode="email" aria-label="כתובת מייל לניוזלטר">
-            <label class="news-consent">
-              <input type="checkbox" name="news-consent" required>
-              <span>אני מאשר/ת קבלת ניוזלטר, עדכונים ותוכן שיווקי במייל מ"הורה ומיוחד", ומבין/ה שאוכל להסיר את עצמי בכל עת, בהתאם ל<a href="#legal-privacy" onclick="document.getElementById('legalModal').style.display='flex';document.getElementById('legalTitle').textContent='מדיניות פרטיות';document.getElementById('legalBody').innerHTML=window.LEGAL_TEXTS.privacy;return false">מדיניות הפרטיות</a>. *</span>
-            </label>
-            <button type="submit" class="btn btn-yellow">הרשמה לעדכונים</button>
-          </form>
-          <div class="news-ok" id="newsOk">תודה! נוספתם לרשימת התפוצה. נתראה בגיליון הקרוב 💙</div>
-        </div>
-        <div class="connect-divider"></div>
-        <span class="connect-community-title">👨‍👩‍👧‍👦 או הצטרפו לקהילה הפעילה שלנו:</span>
-        <div class="connect-community">
-          <a href="https://chat.whatsapp.com/GMj7AIkIbQK9fXXrudZEQx" target="_blank" rel="noopener" class="ccm-wa">💬 קבוצות הוואטסאפ</a>
-          <a href="mailto:a@ho-me.org.il?subject=הצטרפות%20לקהילת%20הורה%20ומיוחד" class="ccm-mail">✉️ הצטרפות במייל</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- ============== FOOTER ============== -->
+<style id="footer-v2">
+  /* רצועת ערכי הליבה — גרסה דקה */
+  .footer-values{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+    padding:16px 0;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,.14);
+    position:relative;z-index:2}
+  .fv-item{display:flex;align-items:center;justify-content:center;gap:10px;
+    color:#fff;font-family:'Rubik',sans-serif;font-weight:700;font-size:.86rem;line-height:1.3}
+  .fv-item svg{width:30px;height:30px;flex-shrink:0;background:rgba(255,255,255,.1);
+    border-radius:9px;padding:5px}
+  @media (max-width:700px){
+    .footer-values{grid-template-columns:1fr 1fr;gap:12px 8px}
+    .fv-item{justify-content:flex-start;font-size:.8rem}
+  }
+  /* הבהרה משפטית — מעוצבת מחדש */
+  .footer-legal{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+    border-radius:14px;padding:16px 20px;position:relative;z-index:2}
+  .footer-legal .fl-title{display:flex;align-items:center;gap:8px;
+    color:var(--brand-yellow);font-family:'Rubik',sans-serif;font-weight:800;font-size:.82rem;
+    margin-bottom:8px}
+  .footer-legal p{margin:0;font-size:.75rem;line-height:1.75;color:rgba(255,255,255,.62)}
+  .footer-legal strong{color:rgba(255,255,255,.8);font-weight:700}
+  /* תיקון פריסה: נשארו 2 בלוקים — גריד מאוזן של 2 עמודות, בלי שטח מת */
+  .footer-grid{grid-template-columns:1fr !important;gap:32px}
+  @media (min-width:700px){
+    .footer-grid{grid-template-columns:1.1fr 1fr !important;gap:56px;align-items:start}
+    .footer-brand-block{max-width:none}
+  }
+  /* ===== פוטר v3 — פריסה מודרנית ===== */
+  .f2-top{display:grid;grid-template-columns:1fr;gap:28px;margin-bottom:26px;position:relative;z-index:2}
+  @media (min-width:760px){.f2-top{grid-template-columns:1.05fr 1fr;gap:56px;align-items:center}}
+  .f2-name{font-family:'Rubik',sans-serif;font-weight:900;font-size:1.45rem;color:#fff;display:block;line-height:1.1}
+  .f2-tag{color:var(--brand-yellow);font-weight:700;font-size:.88rem;display:block;margin:4px 0 12px}
+  .f2-brand p{color:rgba(255,255,255,.75);font-size:.92rem;line-height:1.65;margin:0 0 14px}
+  .f2-gs{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.16);color:var(--brand-yellow);font-weight:700;font-size:.82rem;
+    padding:10px 16px;border-radius:999px;text-decoration:none;transition:background .2s,transform .2s}
+  .f2-gs:hover{background:rgba(255,255,255,.15);transform:translateY(-2px)}
+  .f2-contact{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .f2-chip{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:12px 15px;color:#fff;
+    text-decoration:none;transition:transform .2s,background .2s;min-width:0}
+  a.f2-chip:hover{transform:translateY(-2px);background:rgba(255,255,255,.13)}
+  .f2-chip .ic{font-size:1.15rem;flex-shrink:0;line-height:1}
+  .f2-chip .tx{display:flex;flex-direction:column;gap:1px;line-height:1.3;min-width:0}
+  .f2-chip .tx small{color:var(--brand-yellow);font-size:.68rem;font-weight:800}
+  .f2-chip .tx span{font-size:.82rem;color:rgba(255,255,255,.88);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .f2-chip.addr{grid-column:1/-1}
+  .f2-chip.addr .tx span{white-space:normal}
+  @media (max-width:480px){.f2-contact{grid-template-columns:1fr}}
+
+</style>
 <footer>
   <div class="container">
-    <div class="footer-grid">
-      <div class="footer-brand-block">
-        <p>הבית של הורי העל. מרכז של ידע, תמיכה והעצמה למשפחות עם ילדים בעלי צרכים מיוחדים.<br>עמותה רשומה ע״ר 580715282 · <a href="https://www.guidestar.org.il/organization/580715282" target="_blank" rel="noopener" style="color:var(--brand-yellow);font-weight:700">מאומת בגיידסטאר ↗</a><br>ביחד אנחנו חזקים.</p>
-        <div class="footer-pillars">
-          <!-- 1. קידום יעיל ומהיר -->
-          <div class="footer-pillar">
-            <div class="pillar-icon">
-              <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect x="4" y="26" width="28" height="11" rx="3.5" fill="#562E8C"/>
-                <rect x="20" y="38" width="22" height="11" rx="3.5" fill="#562E8C"/>
-                <circle cx="42" cy="22" r="7" fill="#EA6A4C"/>
-              </svg>
-            </div>
-            <span class="pillar-text">קידום<br>יעיל ומהיר</span>
-          </div>
 
-          <!-- 2. מקצועיות ומסירות -->
-          <div class="footer-pillar">
-            <div class="pillar-icon">
-              <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M12 28 L24 40 L46 18" stroke="#562E8C" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                <circle cx="46" cy="14" r="6" fill="#1CA6A6"/>
-              </svg>
-            </div>
-            <span class="pillar-text">מקצועיות<br>ומסירות</span>
-          </div>
-
-          <!-- 3. ידע וניסיון -->
-          <div class="footer-pillar">
-            <div class="pillar-icon">
-              <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect x="10" y="32" width="13" height="18" rx="3" fill="#562E8C"/>
-                <rect x="28" y="20" width="13" height="30" rx="3" fill="#562E8C"/>
-                <circle cx="34.5" cy="12" r="6" fill="#EA6A4C"/>
-              </svg>
-            </div>
-            <span class="pillar-text">ידע<br>וניסיון</span>
-          </div>
-
-          <!-- 4. ליווי יד ביד -->
-          <div class="footer-pillar">
-            <div class="pillar-icon">
-              <svg viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect x="6" y="30" width="16" height="16" rx="3" transform="rotate(45 14 38)" fill="#562E8C"/>
-                <rect x="34" y="30" width="16" height="16" rx="3" transform="rotate(45 42 38)" fill="#562E8C"/>
-                <circle cx="28" cy="14" r="6" fill="#A78EC9"/>
-              </svg>
-            </div>
-            <span class="pillar-text">ליווי<br>יד ביד</span>
-          </div>
-        </div>
+    <!-- פוטר v3: מותג + כרטיסי קשר -->
+    <div class="f2-top">
+      <div class="f2-brand">
+        <span class="f2-name"><span class="lang-he">הורה ומיוחד</span><span class="lang-en">Horeh uMeyuhad</span></span>
+        <span class="f2-tag"><span class="lang-he">ביחד אנחנו חזקים 💜</span><span class="lang-en">The Home of Special Parents 💜</span></span>
+        <p><span class="lang-he">הבית של הורי העל — ידע, תמיכה והעצמה למשפחות עם ילדים בעלי צרכים מיוחדים.</span><span class="lang-en">Knowledge, support and empowerment for families of children with special needs.</span></p>
+        <a class="f2-gs" href="https://www.guidestar.org.il/organization/580715282/documents" target="_blank" rel="noopener">🛡️ <span class="lang-he">עמותה רשומה ע״ר 580715282 · למסמכי העמותה בגיידסטאר ↗</span><span class="lang-en">Registered Nonprofit 580715282 · Official documents on GuideStar ↗</span></a>
       </div>
-
-      <div class="footer-col">
-        <h4>קישורים</h4>
-        <ul class="footer-links">
-          <li><a href="#about"><span>ℹ️</span> אודותינו</a></li>
-          <li><a href="#amuta"><span>🎉</span> פעילויות וקהילה</a></li>
-          <li><a href="#story"><span>📖</span> הסיפור שלנו</a></li>
-          <li><a href="mimushim.html#tool"><span>🧮</span> בודק הזכאות</a></li>
-          <li><a href="#contact"><span>✉️</span> צור קשר</a></li>
-        </ul>
-      </div>
-
-      <div class="footer-col">
-        <h4>מימושים — מימוש זכויות</h4>
-        <ul class="footer-links">
-          <li><a href="mimushim.html"><span>🏛️</span> לאתר מימושים</a></li>
-          <li><a href="mimushim.html#services"><span>💰</span> קצבת ילד נכה</a></li>
-          <li><a href="mimushim.html#services"><span>🚗</span> קצבת ניידות</a></li>
-          <li><a href="mimushim.html#rights"><span>📋</span> זכויות והטבות</a></li>
-          <li><a href="mimushim.html#tool"><span>🧮</span> בודק הזכאות</a></li>
-        </ul>
-      </div>
-
-      <div class="footer-col footer-contact">
-        <h4>יצירת קשר</h4>
-        <ul class="footer-contact-list">
-          <li>
-            <span class="fc-row">
-              <span class="fc-ic">📍</span>
-              <span class="fc-txt"><strong>כתובת המשרדים</strong><span>הצבי 15, ירושלים<br>פומבדיתא 1, בית שמש</span></span>
-            </span>
-          </li>
-          <li>
-            <a href="tel:02-5023456">
-              <span class="fc-ic">📞</span>
-              <span class="fc-txt"><strong>טלפון</strong><span>02-5023456</span></span>
-            </a>
-          </li>
-          <li>
-            <a href="mailto:a@ho-me.org.il?subject=בקשת%20מידע%20-%20הורה%20ומיוחד&body=היי,%20אני%20מעוניין%20במידע%20וסיוע%20במימוש%20זכויות.">
-              <span class="fc-ic">✉️</span>
-              <span class="fc-txt"><strong>אימייל</strong><span>a@ho-me.org.il</span></span>
-            </a>
-          </li>
-          <li>
-            <a href="https://api.whatsapp.com/send?phone=97225023456&text=היי,%20אני%20מעוניין%20במידע%20נוסף" target="_blank" rel="noopener">
-              <span class="fc-ic">💬</span>
-              <span class="fc-txt"><strong>וואטסאפ</strong><span>שלחו לנו הודעה ←</span></span>
-            </a>
-          </li>
-        </ul>
+      <div class="f2-contact">
+        <a class="f2-chip" href="tel:02-5023456"><span class="ic">📞</span><span class="tx"><small><span class="lang-he">טלפון</span><span class="lang-en">Phone</span></small><span>02-5023456</span></span></a>
+        <a class="f2-chip" href="mailto:a@ho-me.org.il"><span class="ic">✉️</span><span class="tx"><small><span class="lang-he">אימייל</span><span class="lang-en">Email</span></small><span>a@ho-me.org.il</span></span></a>
+        <a class="f2-chip" href="https://api.whatsapp.com/send?phone=97225023456" target="_blank" rel="noopener"><span class="ic">💬</span><span class="tx"><small>WhatsApp</small><span><span class="lang-he">שלחו לנו הודעה ←</span><span class="lang-en">Send us a message →</span></span></span></a>
+        <a class="f2-chip" href="https://chat.whatsapp.com/GMj7AIkIbQK9fXXrudZEQx" target="_blank" rel="noopener"><span class="ic">👨‍👩‍👧‍👦</span><span class="tx"><small><span class="lang-he">הקהילה</span><span class="lang-en">Community</span></small><span><span class="lang-he">קבוצות הוואטסאפ</span><span class="lang-en">WhatsApp groups</span></span></span></a>
+        <span class="f2-chip addr"><span class="ic">📍</span><span class="tx"><small><span class="lang-he">המשרדים</span><span class="lang-en">Offices</span></small><span><span class="lang-he">הצבי 15, ירושלים · פומבדיתא 1, בית שמש</span><span class="lang-en">HaTzvi 15, Jerusalem · Pumbedita 1, Beit Shemesh</span></span></span></span>
       </div>
     </div>
 
     <div class="footer-bottom" style="flex-direction:column;align-items:stretch;gap:18px">
-      <div style="background:rgba(255,255,255,.06);border-radius:12px;padding:14px 18px;font-size:.78rem;line-height:1.7;color:rgba(255,255,255,.7)">
-        <strong style="color:var(--brand-yellow);display:block;margin-bottom:6px">⚠️ הבהרה משפטית · ט.ל.ח</strong>
-        כל המידע והסכומים המוצגים באתר זה הם לצורכי הכוונה כללית בלבד ואינם מהווים ייעוץ משפטי, רפואי, כלכלי או מקצועי. הזכאות בפועל נקבעת אך ורק על ידי הגופים המוסמכים (המוסד לביטוח לאומי, משרדי הממשלה, רשויות מקומיות וקופות חולים) בכפוף לחוקים, תקנות, ועדות ובדיקות. הסכומים והתעריפים עדכניים נכון לתאריך פרסום בלבד. החברה, בעליה ומפעיליה לא יישאו באחריות לכל נזק, ישיר או עקיף, שייגרם משימוש או הסתמכות על המידע. לאימות מידע ולפעולות יש לפנות ישירות למוסד לביטוח לאומי (8809*) או לאיש מקצוע מוסמך.
+      <div class="footer-legal">
+        <span class="fl-title">⚠️ <span class="lang-he">הבהרה משפטית · ט.ל.ח</span><span class="lang-en">Legal Disclaimer · E&OE</span></span>
+        <p class="lang-he">כל המידע והסכומים המוצגים באתר זה הם לצורכי הכוונה כללית בלבד ואינם מהווים ייעוץ משפטי, רפואי, כלכלי או מקצועי. הזכאות בפועל נקבעת אך ורק על ידי הגופים המוסמכים <strong>(המוסד לביטוח לאומי, משרדי הממשלה, רשויות מקומיות וקופות חולים)</strong> בכפוף לחוקים, תקנות, ועדות ובדיקות. הסכומים והתעריפים עדכניים נכון לתאריך הפרסום בלבד. העמותה, החברה ומפעיליהן לא יישאו באחריות לכל נזק, ישיר או עקיף, שייגרם משימוש או הסתמכות על המידע. לאימות מידע ולפעולות יש לפנות ישירות למוסד לביטוח לאומי <strong>(8809*)</strong> או לאיש מקצוע מוסמך.</p><p class="lang-en">All information and amounts on this site are for general guidance only and do not constitute legal, medical, financial or professional advice. Actual eligibility is determined solely by the competent authorities <strong>(the National Insurance Institute, government ministries, local authorities and health funds)</strong>, subject to laws, regulations, committees and examinations. Amounts are current as of publication date only. The nonprofit, the company and their operators bear no liability for any damage, direct or indirect, arising from use of or reliance on this information. For verification and action, contact the National Insurance Institute directly <strong>(*8809)</strong> or a qualified professional.</p>
       </div>
       <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:14px">
-        <span>© 2026 הורה ומיוחד ומימושים — כל הזכויות שמורות · ט.ל.ח</span>
+        <span><span class="lang-he">© 2026 הורה ומיוחד ומימושים — כל הזכויות שמורות · ט.ל.ח</span><span class="lang-en">© 2026 Horeh uMeyuhad & Mimushim — All rights reserved · E&OE</span></span>
         <span style="display:flex;gap:14px;flex-wrap:wrap">
-          <a href="#legal-takanon" onclick="document.getElementById('legalModal').style.display='flex';document.getElementById('legalTitle').textContent='תקנון ותנאי שימוש';document.getElementById('legalBody').innerHTML=window.LEGAL_TEXTS.takanon;return false" style="color:var(--brand-yellow)">תקנון</a>
-          <a href="#legal-privacy" onclick="document.getElementById('legalModal').style.display='flex';document.getElementById('legalTitle').textContent='מדיניות פרטיות';document.getElementById('legalBody').innerHTML=window.LEGAL_TEXTS.privacy;return false" style="color:var(--brand-yellow)">מדיניות פרטיות</a>
-          <a href="#legal-a11y" onclick="document.getElementById('legalModal').style.display='flex';document.getElementById('legalTitle').textContent='הצהרת נגישות';document.getElementById('legalBody').innerHTML=window.LEGAL_TEXTS.a11y;return false" style="color:var(--brand-yellow)">הצהרת נגישות</a>
+          <a href="#legal-takanon" onclick="return openLegal('takanon')" style="color:var(--brand-yellow)"><span class="lang-he">תקנון</span><span class="lang-en">Terms</span></a>
+          <a href="#legal-privacy" onclick="return openLegal('privacy')" style="color:var(--brand-yellow)"><span class="lang-he">מדיניות פרטיות</span><span class="lang-en">Privacy</span></a>
+          <a href="#legal-a11y" onclick="return openLegal('a11y')" style="color:var(--brand-yellow)"><span class="lang-he">הצהרת נגישות</span><span class="lang-en">Accessibility</span></a>
         </span>
-        <span>הזכות שלך, הכוח שלנו 💜</span>
+        <span><span class="lang-he">הזכות שלך, הכוח שלנו 💜</span><span class="lang-en">Your right, our strength 💜</span></span>
       </div>
     </div>
   </div>
@@ -1824,19 +1644,19 @@
 
 <!-- כפתורים צפים: מחשבון · למימוש זכויות · תרומה · דברו איתנו (פותח חלון) -->
 <div class="cta-fabs" aria-label="פעולות מהירות">
-  <a href="mimushim.html" class="cta-fab cta-fab-lead" aria-label="למימוש זכויות — לאתר מימושים"><span class="ic">💰</span> למימוש זכויות</a>
-  <a href="https://ultra.kesherhk.info/external/paymentPage/310815" target="_blank" rel="noopener" class="cta-fab cta-fab-donate" aria-label="תרומה לעמותה"><span class="ic">💙</span> תרומה</a>
-  <button type="button" class="cta-fab cta-fab-talk" id="talkFab" aria-label="דברו איתנו עכשיו" aria-haspopup="true" aria-expanded="false"><span class="ic">💬</span> דברו איתנו עכשיו</button>
+  <a href="mimushim.html" class="cta-fab cta-fab-lead" aria-label="אגף מימושים — מימוש זכויות"><span class="ic">💰</span> <span class="lang-he">אגף מימושים</span><span class="lang-en">Rights Division</span></a>
+  <a href="https://ultra.kesherhk.info/external/paymentPage/310815" target="_blank" rel="noopener" class="cta-fab cta-fab-donate" aria-label="תרומה לעמותה"><span class="ic">💙</span> <span class="lang-he">תרומה</span><span class="lang-en">Donate</span></a>
+  <button type="button" class="cta-fab cta-fab-talk" id="talkFab" aria-label="דברו איתנו עכשיו" aria-haspopup="true" aria-expanded="false"><span class="ic">💬</span> <span class="lang-he">דברו איתנו עכשיו</span><span class="lang-en">Talk to us</span></button>
 </div>
 
 <!-- חלון צף: דרכי יצירת קשר -->
 <div class="talk-pop" id="talkPop" role="dialog" aria-label="דברו איתנו" hidden>
   <button class="talk-pop-close" id="talkPopClose" aria-label="סגור">✕</button>
-  <strong class="tp-title">📞 דברו איתנו עכשיו</strong>
-  <p class="tp-sub">בחרו את הדרך הנוחה לכם — ונחזור אליכם בהקדם.</p>
-  <a href="https://api.whatsapp.com/send?phone=97225023456&text=היי,%20אני%20מעוניין%20במידע%20נוסף" target="_blank" rel="noopener" class="tp-btn tp-wa"><span>💬</span> וואטסאפ</a>
-  <a href="mailto:a@ho-me.org.il?subject=בקשת%20מידע%20-%20הורה%20ומיוחד&body=היי,%20אני%20מעוניין%20במידע%20וסיוע%20במימוש%20זכויות." class="tp-btn tp-mail"><span>✉️</span> אימייל</a>
-  <a href="tel:02-5023456" class="tp-btn tp-tel"><span>📞</span> חיוג: 02-5023456</a>
+  <strong class="tp-title">📞 <span class="lang-he">דברו איתנו עכשיו</span><span class="lang-en">Talk to us now</span></strong>
+  <p class="tp-sub"><span class="lang-he">בחרו את הדרך הנוחה לכם — ונחזור אליכם בהקדם.</span><span class="lang-en">Choose what works for you — we’ll get back to you soon.</span></p>
+  <a href="https://api.whatsapp.com/send?phone=97225023456&text=היי,%20אני%20מעוניין%20במידע%20נוסף" target="_blank" rel="noopener" class="tp-btn tp-wa"><span>💬</span> <span class="lang-he">וואטסאפ</span><span class="lang-en">WhatsApp</span></a>
+  <a href="mailto:a@ho-me.org.il?subject=בקשת%20מידע%20-%20הורה%20ומיוחד&body=היי,%20אני%20מעוניין%20במידע%20וסיוע%20במימוש%20זכויות." class="tp-btn tp-mail"><span>✉️</span> <span class="lang-he">אימייל</span><span class="lang-en">Email</span></a>
+  <a href="tel:02-5023456" class="tp-btn tp-tel"><span>📞</span> <span class="lang-he">חיוג: 02-5023456</span><span class="lang-en">Call: 02-5023456</span></a>
 </div>
 <script>
 (function(){
@@ -2002,39 +1822,39 @@ function handleNewsletter(e){
 
 <aside class="a11y-panel" id="a11yPanel" role="dialog" aria-label="הגדרות נגישות" aria-hidden="true">
   <div class="a11y-panel-head">
-    <h3>♿ הגדרות נגישות</h3>
+    <h3>♿ <span class="lang-he">הגדרות נגישות</span><span class="lang-en">Accessibility</span></h3>
     <button class="a11y-close" id="a11yClose" aria-label="סגור">✕</button>
   </div>
   <div class="a11y-body">
     <div class="a11y-group">
-      <div class="a11y-group-title">🔍 גודל טקסט</div>
+      <div class="a11y-group-title">🔍 <span class="lang-he">גודל טקסט</span><span class="lang-en">Text size</span></div>
       <div class="a11y-btns" style="grid-template-columns:1fr 1fr 1fr">
-        <button class="a11y-btn" data-toggle="font" data-val="normal"><span class="ico">A</span><span>רגיל</span></button>
-        <button class="a11y-btn" data-toggle="font" data-val="lg"><span class="ico">A+</span><span>גדול</span></button>
-        <button class="a11y-btn" data-toggle="font" data-val="xl"><span class="ico">A++</span><span>ענק</span></button>
+        <button class="a11y-btn" data-toggle="font" data-val="normal"><span class="ico">A</span><span><span class="lang-he">רגיל</span><span class="lang-en">Normal</span></span></button>
+        <button class="a11y-btn" data-toggle="font" data-val="lg"><span class="ico">A+</span><span><span class="lang-he">גדול</span><span class="lang-en">Large</span></span></button>
+        <button class="a11y-btn" data-toggle="font" data-val="xl"><span class="ico">A++</span><span><span class="lang-he">ענק</span><span class="lang-en">Huge</span></span></button>
       </div>
     </div>
     <div class="a11y-group">
-      <div class="a11y-group-title">🎨 ניגודיות וצבע</div>
+      <div class="a11y-group-title">🎨 <span class="lang-he">ניגודיות וצבע</span><span class="lang-en">Contrast & color</span></div>
       <div class="a11y-btns">
-        <button class="a11y-btn" data-toggle="contrast"><span class="ico">⚡</span><span>ניגודיות גבוהה</span></button>
-        <button class="a11y-btn" data-toggle="dark"><span class="ico">🌙</span><span>מצב כהה</span></button>
-        <button class="a11y-btn" data-toggle="mono"><span class="ico">⚫</span><span>שחור-לבן</span></button>
-        <button class="a11y-btn" data-toggle="links"><span class="ico">🔗</span><span>הדגשת קישורים</span></button>
+        <button class="a11y-btn" data-toggle="contrast"><span class="ico">⚡</span><span><span class="lang-he">ניגודיות גבוהה</span><span class="lang-en">High contrast</span></span></button>
+        <button class="a11y-btn" data-toggle="dark"><span class="ico">🌙</span><span><span class="lang-he">מצב כהה</span><span class="lang-en">Dark mode</span></span></button>
+        <button class="a11y-btn" data-toggle="mono"><span class="ico">⚫</span><span><span class="lang-he">שחור-לבן</span><span class="lang-en">Grayscale</span></span></button>
+        <button class="a11y-btn" data-toggle="links"><span class="ico">🔗</span><span><span class="lang-he">הדגשת קישורים</span><span class="lang-en">Highlight links</span></span></button>
       </div>
     </div>
     <div class="a11y-group">
-      <div class="a11y-group-title">📖 קריאות</div>
+      <div class="a11y-group-title">📖 <span class="lang-he">קריאות</span><span class="lang-en">Readability</span></div>
       <div class="a11y-btns">
-        <button class="a11y-btn" data-toggle="readable"><span class="ico">🔤</span><span>גופן קריא</span></button>
-        <button class="a11y-btn" data-toggle="spacing"><span class="ico">📐</span><span>ריווח שורות</span></button>
-        <button class="a11y-btn" data-toggle="noanim"><span class="ico">🛑</span><span>עצירת אנימציות</span></button>
-        <button class="a11y-btn" data-toggle="bigcursor"><span class="ico">🖱️</span><span>סמן גדול</span></button>
+        <button class="a11y-btn" data-toggle="readable"><span class="ico">🔤</span><span><span class="lang-he">גופן קריא</span><span class="lang-en">Readable font</span></span></button>
+        <button class="a11y-btn" data-toggle="spacing"><span class="ico">📐</span><span><span class="lang-he">ריווח שורות</span><span class="lang-en">Line spacing</span></span></button>
+        <button class="a11y-btn" data-toggle="noanim"><span class="ico">🛑</span><span><span class="lang-he">עצירת אנימציות</span><span class="lang-en">Stop animations</span></span></button>
+        <button class="a11y-btn" data-toggle="bigcursor"><span class="ico">🖱️</span><span><span class="lang-he">סמן גדול</span><span class="lang-en">Big cursor</span></span></button>
       </div>
     </div>
-    <button class="a11y-reset" id="a11yReset">🔙 איפוס כל ההגדרות</button>
+    <button class="a11y-reset" id="a11yReset">🔙 <span class="lang-he">איפוס כל ההגדרות</span><span class="lang-en">Reset all</span></button>
     <div class="a11y-statement">
-      <strong>הצהרת נגישות:</strong> אתר זה הונגש לפי תקן ישראלי 5568 (WCAG 2.1 AA). למידע נוסף, לבעיה או הצעת שיפור — <a href="#" onclick="document.getElementById('legalModal').style.display='flex';document.getElementById('legalTitle').textContent='הצהרת נגישות';document.getElementById('legalBody').innerHTML=window.LEGAL_TEXTS.a11y;return false">קרא את ההצהרה המלאה</a> או צרו קשר: <a href="tel:02-5023456">02-5023456</a> / <a href="mailto:a@ho-me.org.il">a@ho-me.org.il</a>
+      <strong><span class="lang-he">הצהרת נגישות:</span><span class="lang-en">Accessibility:</span></strong> <span class="lang-he">אתר זה הונגש לפי תקן ישראלי 5568 (WCAG 2.1 AA). למידע נוסף, לבעיה או הצעת שיפור —</span><span class="lang-en">This site conforms to Israeli Standard 5568 (WCAG 2.1 AA). For issues or suggestions —</span> <a href="#" onclick="return openLegal('a11y')"><span class="lang-he">קרא את ההצהרה המלאה</span><span class="lang-en">Full statement</span></a> או צרו קשר: <a href="tel:02-5023456">02-5023456</a> / <a href="mailto:a@ho-me.org.il">a@ho-me.org.il</a>
     </div>
   </div>
 </aside>
@@ -2123,7 +1943,7 @@ window.LEGAL_TEXTS = {
     <strong>טלפון:</strong> <a href="tel:02-5023456">02-5023456</a><br>
     <strong>אימייל:</strong> <a href="mailto:a@ho-me.org.il">a@ho-me.org.il</a></p>
     <h3>אופן הגשת תלונה</h3>
-    <p>אם נתקלתם בבעיית נגישות, נשמח שתפנו אלינו ונטפל בה בהקדם. במקרה של אי-מענה תוך 45 ימים, ניתן לפנות לנציבות שוויון זכויות לאנשים עם מוגבלות במשרד המשפטים: <a href="https://www.gov.il/he/departments/equal_rights_for_persons_with_disabilities" target="_blank">מעבר לנציבות</a></p>
+    <p>אם נתקלתם בבעיית נגישות, נשמח שתפנו אלינו ונטפל בה בהקדם. במקרה של אי-מענה תוך 45 ימים, ניתן לפנות לנציבות שוויון זכויות לאנשים עם מוגבלות במשרד המשפטים: <a href="https://www.gov.il/he/departments/equal_rights_for_persons_with_disabilities" target="_blank" rel="noopener">מעבר לנציבות</a></p>
     <p style="font-size:.78rem;color:#666;margin-top:14px">תאריך עדכון הצהרה אחרון: 17.05.2026</p>
   `
 };
@@ -2173,5 +1993,30 @@ window.LEGAL_TEXTS = {
   document.querySelectorAll('a[href="#lead"]').forEach(a => { a.href = window.LEAD_URL; });
 </script>
 
+
+<script>
+/* סימון פריט הניווט של העמוד הנוכחי */
+(function(){
+  var p = location.pathname;
+  var inNewsletter = /\/newsletter\/?($|index\.html)/.test(p);
+  var file = p.substring(p.lastIndexOf('/')+1) || 'index.html';
+  if(file === '') file = 'index.html';
+  document.querySelectorAll('.nav-links a, .mobile-menu a').forEach(function(a){
+    var h = (a.getAttribute('href')||'').split('#')[0];
+    var active;
+    if(inNewsletter){
+      active = (h === './');
+    } else {
+      if(h === 'newsletter/' || h === '../newsletter/') active = false;
+      else {
+        var hf = h.replace(/^\.\.\//,'');
+        active = (hf === file) || (file === 'index.html' && hf === 'index.html');
+      }
+    }
+    if(active) a.classList.add('is-active');
+  });
+})();
+</script>
+<script src="i18n.js"></script>
 </body>
 </html>
