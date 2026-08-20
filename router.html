@@ -77,6 +77,14 @@
   .preview-msg strong{color:var(--brand-purple)}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
+<style id="mini-footer-css">
+  .mini-footer{margin-top:32px;padding:20px 16px;border-top:1px solid rgba(86,46,140,.14);
+    text-align:center;font-family:'Heebo',Arial,sans-serif;font-size:.8rem;line-height:1.9;color:#6b5f85}
+  .mini-footer a{color:#562E8C;font-weight:700;text-decoration:none}
+  .mini-footer a:hover{text-decoration:underline}
+  .mini-footer .mf-org{font-weight:800;color:#562E8C}
+  @media print{.mini-footer{display:none}}
+</style>
 </head>
 <body>
 
@@ -146,6 +154,14 @@
     </p>
   </div>
 </main>
+
+<footer class="mini-footer">
+  <span class="mf-org">הורה ומיוחד</span> · עמותה רשומה ע״ר 580715282<br>
+  <a href="mailto:a@ho-me.org.il">a@ho-me.org.il</a> · <a href="tel:02-5023456">02-5023456</a> ·
+  <a href="index.html">לאתר העמותה</a><br>
+  <span style="font-size:.74rem;opacity:.85">המידע להכוונה כללית בלבד ואינו ייעוץ מקצועי · הזכאות נקבעת ע״י הגופים המוסמכים · ט.ל.ח</span>
+</footer>
+
 
 <script>
   const state = { age: 25, gender: null };

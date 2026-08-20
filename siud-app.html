@@ -153,6 +153,14 @@
   @media (max-width:480px){.options.cols-2{grid-template-columns:1fr}.btn-ghost{min-width:auto;padding:14px 20px}}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
+<style id="mini-footer-css">
+  .mini-footer{margin-top:32px;padding:20px 16px;border-top:1px solid rgba(86,46,140,.14);
+    text-align:center;font-family:'Heebo',Arial,sans-serif;font-size:.8rem;line-height:1.9;color:#6b5f85}
+  .mini-footer a{color:#562E8C;font-weight:700;text-decoration:none}
+  .mini-footer a:hover{text-decoration:underline}
+  .mini-footer .mf-org{font-weight:800;color:#562E8C}
+  @media print{.mini-footer{display:none}}
+</style>
 </head>
 <body>
 
@@ -172,6 +180,14 @@
     <div id="app"></div>
   </div>
 </main>
+
+<footer class="mini-footer">
+  <span class="mf-org">הורה ומיוחד</span> · עמותה רשומה ע״ר 580715282<br>
+  <a href="mailto:a@ho-me.org.il">a@ho-me.org.il</a> · <a href="tel:02-5023456">02-5023456</a> ·
+  <a href="index.html">לאתר העמותה</a><br>
+  <span style="font-size:.74rem;opacity:.85">המידע להכוונה כללית בלבד ואינו ייעוץ מקצועי · הזכאות נקבעת ע״י הגופים המוסמכים · ט.ל.ח</span>
+</footer>
+
 
 <script>
   // נתוני סיעוד 2026 — מבוסס על btl.gov.il/benefits/long_term_care_insurance
@@ -1027,5 +1043,6 @@ window.LEGAL_TEXTS = {
   window.LEAD_URL = "https://cloud.kaveret.biz/contact-forms/9452/%D7%93%D7%A3%20%D7%A0%D7%97%D7%99%D7%AA%D7%94%20%D7%94%D7%95%D7%A8%D7%94%20%D7%95%D7%9E%D7%99%D7%95%D7%97%D7%93"; // TODO: להחליף ל-URL של ה-CRM החדש
   document.querySelectorAll('a[href="#lead"]').forEach(a => { a.href = window.LEAD_URL; });
 </script>
+<script src="lead-popup.js"></script>
 </body>
 </html>
