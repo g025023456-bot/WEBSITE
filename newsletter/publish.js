@@ -99,10 +99,14 @@ console.log('  מקור  :  ' + src);
 if (DRY) { console.log('\n  [--dry] בדיקה בלבד — לא שונה דבר.\n'); process.exit(0); }
 
 // ---------- ביצוע ----------
-// 1+2. עותק מתוארך + דריסת latest
+// 1+2. עותק מתוארך + דריסת latest (+ הזרקת קוד המעקב של Google Analytics אם חסר)
+let out = html;
+if (!/analytics\.js|googletagmanager/i.test(out)) {
+  out = out.replace(/<\/head>/i, '  <script src="../analytics.js" defer></script>\n</head>');
+}
 const dated = path.join(DIR, date + '.html');
-fs.copyFileSync(src, dated);
-fs.copyFileSync(src, LATEST);
+fs.writeFileSync(dated, out, 'utf8');
+fs.writeFileSync(LATEST, out, 'utf8');
 
 // 3. הוספת השורה בראש הרשימה
 data = data.slice(0, at + anchor.length) + '\n' + line + data.slice(at + anchor.length);
