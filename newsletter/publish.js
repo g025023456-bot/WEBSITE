@@ -99,10 +99,13 @@ console.log('  מקור  :  ' + src);
 if (DRY) { console.log('\n  [--dry] בדיקה בלבד — לא שונה דבר.\n'); process.exit(0); }
 
 // ---------- ביצוע ----------
-// 1+2. עותק מתוארך + דריסת latest (+ הזרקת קוד המעקב של Google Analytics אם חסר)
+// 1+2. עותק מתוארך + דריסת latest (+ הזרקת קוד המעקב של Google Analytics ותפריט הנגישות אם חסרים)
 let out = html;
 if (!/analytics\.js|googletagmanager/i.test(out)) {
   out = out.replace(/<\/head>/i, '  <script src="../analytics.js" defer></script>\n</head>');
+}
+if (!/a11y-widget\.js/i.test(out)) {
+  out = out.replace(/<\/head>/i, '  <script src="../a11y-widget.js" defer></script>\n</head>');
 }
 const dated = path.join(DIR, date + '.html');
 fs.writeFileSync(dated, out, 'utf8');
