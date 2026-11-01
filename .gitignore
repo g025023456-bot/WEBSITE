@@ -1,3 +1,7 @@
 .vscode/
+newsletter-manager/node_modules/
+newsletter-manager/dist/
+newsletter-manager/smoke-*.png
+newsletter-manager/ver.txt
 newsletter/טיוטות/
 newsletter/automation/logs/

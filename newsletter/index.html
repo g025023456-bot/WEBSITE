@@ -1303,7 +1303,6 @@
             +'<div class="sub">הירשמו למעלה ותקבלו אותו ראשונים.</div></div>';
           return;
         }
-        items.sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
         function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){
           return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c];});}
         function heDate(iso){var p=String(iso||'').split('-');return p.length===3?(p[2]+'.'+p[1]+'.'+p[0]):esc(iso);}

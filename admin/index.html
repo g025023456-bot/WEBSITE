@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self' https: data:;">
+  <title>ניהול הניוזלטרים · הורה ומיוחד</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div id="loadingBar" class="loading-bar" hidden><span></span></div>
+  <div id="dropOverlay" class="drop-overlay" hidden><div class="drop-box">⬇ שחררו כאן קובץ גיליון</div></div>
+  <header class="titlebar">
+    <div class="titlebar-brand">
+      <span class="brand-mark">ה<span>+</span></span>
+      <span class="titlebar-name"><strong>הורה ומיוחד</strong><small>ניהול הניוזלטרים</small></span>
+    </div>
+    <div class="titlebar-actions">
+      <span id="saveState" class="save-state"><span class="state-dot"></span> האתר מעודכן</span>
+      <button id="saveButton" class="button button-titlebar" disabled>שמירת שינויים</button>
+    </div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="side-label">ניהול האתר</div>
+      <div class="side-link active"><span class="side-icon">▤</span> גיליונות</div>
+      <div class="sidebar-bottom">
+        <div class="side-label">חיבור לאתר החי</div>
+        <div id="connectionLabel" class="folder-label">לא מחובר</div>
+        <button id="logoutButton" class="button button-outline button-wide" hidden>התנתקות</button>
+        <p class="side-hint">שמירה מפרסמת לאתר תוך דקה-שתיים.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">מרכז הבקרה</div>
+          <h1>הניוזלטרים שלך</h1>
+          <p class="top-subtitle">ניהול הארכיון, הסדר והתצוגה באתר</p>
+        </div>
+      </header>
+
+      <section id="welcome" class="welcome-card">
+        <div class="welcome-icon">▤</div>
+        <div class="connect-body">
+          <h2>התחברות</h2>
+          <p>מתחברים עם האימייל והסיסמה שקיבלתם, ומנהלים את הניוזלטרים של האתר.</p>
+          <form id="connectForm" class="connect-form">
+            <label for="emailInput">אימייל</label>
+            <input id="emailInput" type="email" dir="ltr" autocomplete="username" spellcheck="false" placeholder="name@ho-me.org.il">
+            <label for="passwordInput">סיסמה</label>
+            <input id="passwordInput" type="password" autocomplete="current-password">
+            <div id="connectError" class="form-error" role="alert"></div>
+            <button type="submit" id="connectButton" class="button button-primary">התחברות</button>
+          </form>
+        </div>
+      </section>
+
+      <div id="workspace" class="workspace" hidden>
+        <section class="summary-row">
+          <article class="summary-card">
+            <div class="summary-icon purple">▤</div>
+            <div><span class="summary-label">גיליונות בארכיון</span><strong id="issueCount">0</strong></div>
+            <span class="summary-note">כל הגיליונות שפורסמו</span>
+          </article>
+          <article class="summary-card">
+            <div class="summary-icon teal">↗</div>
+            <div><span class="summary-label">הגיליון שמוצג ראשון</span><strong id="latestDate">·</strong></div>
+            <span class="summary-note">מופיע כגיליון האחרון</span>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <div class="panel issues-panel">
+            <div class="panel-heading">
+              <div><h2>כל הגיליונות</h2><p>הראשון ברשימה מוצג באתר כגיליון האחרון</p></div>
+              <button id="addButton" class="button button-primary"><span class="plus">＋</span> הוספת גיליון</button>
+            </div>
+            <section id="scheduledPanel" class="scheduled-panel" hidden>
+              <div class="scheduled-title">⏳ גיליונות עתידיים · ממתינים לפרסום</div>
+              <div id="scheduledList"></div>
+              <p class="scheduled-hint">ביום היעד יופיע כאן כפתור פרסום.</p>
+            </section>
+            <div class="search-row">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input id="searchInput" type="search" placeholder="חיפוש בגיליונות: מילה מהתוכן, כותרת או תאריך" aria-label="חיפוש גיליונות">
+              <span id="searchCount" class="search-count" hidden></span>
+            </div>
+            <div id="issueList" class="issue-list"></div>
+            <div id="noResults" class="no-results" hidden>לא נמצאו גיליונות שמתאימים לחיפוש.</div>
+            <div class="archive-note"><span>ⓘ</span><span>מחיקה מסירה את הגיליון מהאתר לצמיתות. אפשר גם לגרור לכאן קובץ גיליון חדש.</span></div>
+          </div>
+
+          <aside class="panel preview-panel">
+            <div class="preview-heading">
+              <div><h2>תצוגה מקדימה</h2><p id="previewCaption">בחרו גיליון מהרשימה</p></div>
+              <span class="preview-tag">תצוגת אתר</span>
+            </div>
+            <div class="preview-device">
+              <iframe id="previewFrame" title="תצוגה מקדימה של הניוזלטר" sandbox=""></iframe>
+              <div id="previewEmpty" class="preview-empty">
+                <span>▧</span>
+                <strong>התצוגה תופיע כאן</strong>
+                <small>בחרו גיליון קיים או העלו קובץ HTML חדש</small>
+              </div>
+            </div>
+            <button id="editButton" class="button button-outline button-wide" disabled>עריכת פרטי הגיליון</button>
+          </aside>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="editorBackdrop" class="modal-backdrop" hidden>
+    <section class="editor-modal" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+      <div class="modal-heading">
+        <div><span class="eyebrow">פרטי גיליון</span><h2 id="editorTitle">עריכת גיליון</h2></div>
+        <button id="closeEditorButton" class="icon-button" aria-label="סגירה">×</button>
+      </div>
+      <form id="issueForm">
+        <label for="issueDate">תאריך פרסום</label>
+        <input id="issueDate" name="date" type="date" required>
+        <small class="field-hint">התאריך בארכיון ובשם הקובץ. תוכן ה-HTML עצמו נשאר כפי שהועלה.</small>
+        <label for="issueTitle">כותרת</label>
+        <input id="issueTitle" name="title" type="text" maxlength="160" required>
+        <label for="issueSub">תיאור קצר</label>
+        <textarea id="issueSub" name="sub" rows="3" maxlength="300"></textarea>
+        <label class="check-row" id="scheduleRow" hidden>
+          <input type="checkbox" id="scheduleCheck">
+          <span>גיליון עתידי: לשמור בהמתנה ולפרסם לאתר רק בתאריך שנבחר</span>
+        </label>
+        <div id="editorError" class="form-error" role="alert"></div>
+        <div class="modal-actions">
+          <button type="button" id="cancelEditorButton" class="button button-outline">ביטול</button>
+          <button type="submit" class="button button-primary">שמירת פרטים</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
