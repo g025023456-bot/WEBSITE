@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self' https: data:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://api.anthropic.com; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self' https: data:;">
   <title>ניהול הניוזלטרים · הורה ומיוחד</title>
   <link rel="stylesheet" href="/admin/styles.css">
   <script src="/admin/app.js" defer></script>
@@ -200,11 +200,12 @@
         </div>
 
         <section class="monitor-strip">
-          <label class="switch-row">
+          <label class="switch-row" id="monitorRow">
             <input type="checkbox" id="monitorToggle">
             <span class="switch"></span>
             <span><strong>מעקב אוטומטי</strong> · בודק את המקורות ברקע ומתריע בהודעת Windows על חומר חשוב</span>
           </label>
+          <span id="monitorWebNote" class="monitor-info" hidden>מעקב אוטומטי ברקע והודעות Windows זמינים באפליקציית הדסקטופ. כאן: חיפוש, ניסוח ופרסום.</span>
           <span id="monitorInfo" class="monitor-info">עדיין לא נבדק</span>
           <span id="aiChip" class="ai-chip">AI: בודק...</span>
         </section>
@@ -346,15 +347,14 @@
       <div class="settings-section">
         <h3>מפתח AI (Anthropic)</h3>
         <p class="settings-hint" id="aiKeyHint">המפתח נשמר מוצפן במחשב הזה בלבד. אם מנהל האתר הגדיר מפתח ב-Vercel, הוא נטען אוטומטית למשתמש מחובר.</p>
-        <div class="key-row">
+        <div class="key-row" id="aiKeyRow">
           <input id="aiKeyInput" type="password" dir="ltr" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
           <button type="button" id="aiKeyTestButton" class="button button-outline">בדיקה</button>
           <button type="button" id="aiKeySaveButton" class="button button-primary">שמירה</button>
         </div>
         <div id="aiKeyStatus" class="form-error"></div>
       </div>
-      <div class="settings-section">
-        <h3>מעקב אוטומטי</h3>
+      <div class="settings-section" id="settingsMonitorSection">
         <label class="check-row"><input type="checkbox" id="settingMonitor"><span>לבדוק את המקורות ברקע ולהתריע על חומר חשוב</span></label>
         <label class="inline-field">תדירות הבדיקה
           <select id="settingInterval">
@@ -367,9 +367,12 @@
         </label>
         <label class="check-row"><input type="checkbox" id="settingNotify"><span>הודעה קופצת ב-Windows כשנמצא עדכון חשוב</span></label>
         <label class="check-row"><input type="checkbox" id="settingAutoWebSearch"><span>לכלול גם חיפוש AI ברשת בבדיקות האוטומטיות (עולה יותר)</span></label>
-        <label class="check-row"><input type="checkbox" id="settingManualWebSearch"><span>לכלול חיפוש AI ברשת בלחיצה על "חיפוש עדכונים חדשים"</span></label>
       </div>
       <div class="settings-section">
+        <h3>חיפוש ברשת</h3>
+        <label class="check-row"><input type="checkbox" id="settingManualWebSearch"><span>לכלול חיפוש AI ברשת בלחיצה על "חיפוש עדכונים חדשים" (מכסה את gov.il; לוקח דקה-שתיים)</span></label>
+      </div>
+      <div class="settings-section" id="settingsWindowsSection">
         <h3>Windows</h3>
         <label class="check-row"><input type="checkbox" id="settingStartup"><span>להפעיל את האפליקציה ברקע עם ההדלקה של המחשב</span></label>
         <label class="check-row"><input type="checkbox" id="settingTray"><span>כשסוגרים את החלון והמעקב פעיל, להמשיך לרוץ באזור ההתראות</span></label>

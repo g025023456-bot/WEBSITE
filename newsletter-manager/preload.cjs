@@ -7,7 +7,7 @@ function subscribe(channel, callback) {
 }
 
 contextBridge.exposeInMainWorld('newsletterApp', {
-  features: { discovery: true, desktop: true },
+  features: { discovery: true, monitor: true, localKey: true, desktop: true },
   getSession: () => ipcRenderer.invoke('newsletter:get-session'),
   login: details => ipcRenderer.invoke('newsletter:login', details),
   logout: () => ipcRenderer.invoke('newsletter:logout'),

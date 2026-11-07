@@ -1361,6 +1361,9 @@ function renderUpdates() {
   if (u.ai && u.ai.available) {
     elements.aiChip.textContent = `AI פעיל · ${u.ai.source === 'local' ? 'מפתח מהמחשב הזה' : 'מפתח מהגדרות האתר'}`;
     elements.aiChip.className = 'ai-chip on';
+  } else if (!state.canWrite) {
+    elements.aiChip.textContent = 'AI: התחברו כדי לטעון את המפתח מהאתר';
+    elements.aiChip.className = 'ai-chip off';
   } else {
     elements.aiChip.textContent = 'AI לא מוגדר · דירוג לפי מילות מפתח בלבד';
     elements.aiChip.className = 'ai-chip off';
@@ -1760,8 +1763,11 @@ async function generateDraft() {
     return;
   }
   if (!u.ai || !u.ai.available) {
-    showToast('לניסוח עם AI צריך מפתח. פתחו את "הגדרות מעקב ו-AI" והזינו מפתח Anthropic.', true);
-    openSettings();
+    const features = window.newsletterApp.features || {};
+    showToast(features.localKey
+      ? 'לניסוח עם AI צריך מפתח. פתחו את "הגדרות מעקב ו-AI" והזינו מפתח Anthropic, או התחברו כדי לקבל את המפתח מהאתר.'
+      : (state.canWrite ? 'לניסוח עם AI צריך מפתח באתר: הגדירו ANTHROPIC_API_KEY ב-Vercel ועשו Redeploy.' : 'התחברו קודם: המפתח ל-AI נטען מהאתר למשתמש מחובר.'), true);
+    if (features.localKey) openSettings();
     return;
   }
   state.pendingDraft = null;
@@ -1932,6 +1938,17 @@ async function startup() {
   if (features.discovery) {
     elements.navUpdates.hidden = false;
     elements.navSources.hidden = false;
+    if (!features.monitor) {
+      // דף הניהול באתר: אין מעקב ברקע ואין הודעות Windows; שאר המנוע זהה.
+      $('monitorRow').hidden = true;
+      $('monitorWebNote').hidden = false;
+      $('settingsMonitorSection').hidden = true;
+      $('settingsWindowsSection').hidden = true;
+    }
+    if (!features.localKey) {
+      $('aiKeyRow').hidden = true;
+      elements.aiKeyHint.textContent = 'בדף הניהול באתר המפתח מגיע מהגדרות האתר ב-Vercel (ANTHROPIC_API_KEY) ונטען אוטומטית אחרי התחברות. אפשר לשמור מפתח מקומי רק באפליקציית הדסקטופ.';
+    }
     window.newsletterApp.onNavigate(view => setView(view));
     window.newsletterApp.onRunDiscovery(() => { setView('updates'); runScan(); });
     window.newsletterApp.discovery.onFinished(event => {

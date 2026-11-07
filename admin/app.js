@@ -1,8 +1,630 @@
-// שכבת החיבור של דף הניהול באתר: מממשת את אותו ממשק newsletterApp של
-// אפליקציית הדסקטופ, מעל קריאות fetch לפונקציית /api/newsletter-admin.
-// הקובץ admin/app.js נבנה אוטומטית: web-bridge.js + renderer.js (npm run build-admin).
+// החלק הטהור של מנוע האיתור, משותף לדסקטופ (Node) ולדף הניהול באתר (דפדפן):
+// רשימת ברירת המחדל של המקורות, דירוג לפי מילות מפתח, ונרמול כתובות.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.DiscoverCore = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  const DEFAULT_SOURCES = [
+    { id: 'btl-news', name: 'ביטוח לאומי · חדשות והודעות', url: 'https://www.btl.gov.il/About/news/Pages/default.aspx', enabled: true },
+    { id: 'btl-disabled-child', name: 'ביטוח לאומי · ילד נכה', url: 'https://www.btl.gov.il/benefits/Disabled_Child/Pages/default.aspx', enabled: true },
+    { id: 'kolzchut-recent', name: 'כל זכות · עדכונים אחרונים', url: 'https://www.kolzchut.org.il/he/Special:RecentChanges?feed=atom', enabled: true },
+    { id: 'kolzchut-children', name: 'כל זכות · ילדים עם מוגבלות', url: 'https://www.kolzchut.org.il/he/%D7%99%D7%9C%D7%93%D7%99%D7%9D_%D7%A2%D7%9D_%D7%A6%D7%A8%D7%9B%D7%99%D7%9D_%D7%9E%D7%99%D7%95%D7%97%D7%93%D7%99%D7%9D', enabled: true },
+    { id: 'bizchut', name: 'בזכות · זכויות אנשים עם מוגבלות', url: 'https://bizchut.org.il/', enabled: true },
+    { id: 'kesher', name: 'קשר · הבית של המשפחות המיוחדות', url: 'https://www.kesher.org.il/feed/', enabled: true },
+    { id: 'alut', name: 'אלו"ט · אוטיזם', url: 'https://alut.org.il/feed/', enabled: true },
+    { id: 'beitissie', name: 'בית איזי שפירא', url: 'https://www.beitissie.org.il/feed/', enabled: false },
+    { id: 'nitzan', name: 'ניצן · לקויות למידה', url: 'https://www.nitzan-israel.org.il/feed/', enabled: false },
+    { id: 'akim', name: 'אקים', url: 'https://www.akim.org.il/feed/', enabled: false }
+  ];
+
+  // מילות מפתח לדירוג בסיסי כשאין מפתח AI (ציון 0-10).
+  const KEYWORDS = [
+    ['ילד נכה', 4], ['ילד עם מוגבלות', 4], ['ילדים עם מוגבלות', 4], ['צרכים מיוחדים', 4], ['חינוך מיוחד', 4],
+    ['גמלת ילד נכה', 5], ['קצבת ילד נכה', 5], ['קצבה', 2], ['קצבאות', 2], ['זכאות', 2], ['זכויות', 2], ['זכות', 1],
+    ['ביטוח לאומי', 2], ['ועדה', 2], ['ועדת', 2], ['השמה', 2], ['אפיון', 2], ['סייעת', 3], ['סייעות', 3], ['הסעה', 2], ['הסעות', 2],
+    ['סל שיקום', 3], ['סל תקשורת', 3], ['התפתחות הילד', 3], ['אוטיזם', 3], ['מוגבלות', 2], ['נכות', 2], ['שיקום', 1],
+    ['תג נכה', 3], ['תג חניה', 3], ['הנחה', 2], ['הנחות', 2], ['פטור', 2], ['הטבה', 2], ['הטבות', 2], ['מענק', 2],
+    ['משרד הרווחה', 2], ['משרד החינוך', 2], ['משרד הבריאות', 1], ['קופת חולים', 1], ['טיפול', 1], ['טיפולים', 1],
+    ['הורים', 1], ['משפחה', 1], ['משפחות', 1], ['מעסיק', 1], ['ימי מחלה', 2], ['היעדרות', 2], ['נופשון', 2], ['מטפל', 1],
+    ['מבחן', 0], ['דרוש', -3], ['דרושה', -3], ['משרה', -3], ['תרומה', -2], ['אירוע', -1], ['כנס', -1], ['בחירות', -1]
+  ];
+
+  const FIRST_RUN_CANDIDATES = 12;
+  const MAX_FINDINGS = 500;
+
+  function clip(text, max) {
+    const value = String(text || '').trim();
+    return value.length > max ? `${value.slice(0, max - 1).trimEnd()}…` : value;
+  }
+
+  function normalizeLink(url) {
+    try {
+      const parsed = new URL(url);
+      parsed.hash = '';
+      if (/[?&](diff|oldid|curid)=/.test(parsed.search)) parsed.search = '';
+      for (const key of [...parsed.searchParams.keys()]) {
+        if (/^(utm_|fbclid|gclid|__cft|ref)/i.test(key)) parsed.searchParams.delete(key);
+      }
+      let out = parsed.toString();
+      if (out.endsWith('/') && parsed.pathname !== '/') out = out.slice(0, -1);
+      return out;
+    } catch (error) {
+      return String(url);
+    }
+  }
+
+  function hostOf(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ''); } catch (error) { return ''; }
+  }
+
+  function keywordScore(item) {
+    const haystack = `${item.title} ${item.summary || ''}`;
+    let score = 0;
+    let hits = 0;
+    for (const [word, weight] of KEYWORDS) {
+      if (haystack.includes(word)) { score += weight; hits++; }
+    }
+    if (!hits) return 1;
+    return Math.max(0, Math.min(10, 2 + score));
+  }
+
+  return { DEFAULT_SOURCES, KEYWORDS, FIRST_RUN_CANDIDATES, MAX_FINDINGS, clip, normalizeLink, hostOf, keywordScore };
+});
+
+// ליבת ה-AI המשותפת לדסקטופ (Node, דרך ai.cjs) ולדף הניהול באתר (דפדפן, דרך web-bridge.js):
+// ההנחיות, הסכמות, בניית הבקשות ועיבוד התשובות. אין כאן קריאות רשת, רק טקסט ולוגיקה.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.AiCore = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  const MODEL = 'claude-opus-5-5';
+  const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
+  const PAGE_TEXT_LIMIT = 9000;
+
+  const AUDIENCE = 'הקהל: כ-700 משפחות חרדיות בישראל שמגדלות ילדים עם צרכים מיוחדים (מוגבלות פיזית, שכלית, התפתחותית, אוטיזם, מחלות כרוניות). הם מחפשים זכויות, קצבאות, שירותים, הליכים מול ביטוח לאומי, משרד הרווחה, משרד החינוך, משרד הבריאות, קופות החולים והרשויות המקומיות, וטיפים מעשיים.';
+
+  const CONTENT_RULES = `כללי תוכן מחייבים (הפרה = פסילה):
+1. בלי סכומי כסף ובלי אחוזים, אף פעם. במקום זה: "שווה לבדוק", "תלוי בהחלטת הוועדה", "משתנה בין רשות לרשות".
+2. תוכן נצחי, לא תלוי תאריך: בלי "השבוע", "עכשיו", "לאחרונה", "לפני החגים", בלי שמות חודשים ובלי תאריכים. כותבים עקרונות ("לפני כל פתיחת שנה...").
+3. בלי קו מפריד ארוך (—) ובלי מקף ארוך (–) בשום מקום. משתמשים בפסיק, בנקודה או בנקודה-אמצעית (·).
+4. בלי ציטוטים, בלי סיפורי הצלחה ובלי דוגמאות על אנשים. רק מידע.
+5. מידע כללי, לא ייעוץ ולא הבטחה: "פעמים רבות", "עשויים להיות זכאים", "כדאי לבדוק". בלי מספרי סעיפים בחוק ובלי תנאים מספריים מדויקים (גילאים, ותק, מספר ימים) אלא אם הם מופיעים במפורש במקור.
+6. עברית תקנית, חמה ופשוטה, פנייה בלשון רבים ("אתם"). קהל חרדי: ניסוח מכבד, בלי סלנג.
+7. העמותה: "הורה ומיוחד", המייל a@ho-me.org.il. אין להזכיר כתובת מייל אחרת. את "מימושים" לא מזכירים.
+8. לא ממציאים זכות או הליך שלא מופיעים במקורות. אם המקורות דלים, כותבים על מה שיש, בזהירות.
+9. בלי סימני מרקדאון, מלבד **הדגשה** של ביטוי אחד או שניים בכל קטע, אם יש צורך.`;
+
+  const DRAFT_SCHEMA = {
+    type: 'object',
+    properties: {
+      subject: { type: 'string', description: 'שורת נושא למייל, עד 60 תווים, סקרנות ורלוונטיות בלי קליקבייט' },
+      title: { type: 'string', description: 'כותרת הכתבה הראשית, עד 60 תווים' },
+      sub: { type: 'string', description: 'משפט או שניים מתחת לכותרת שמסבירים מה הזכות ולמה זה חשוב, עד 170 תווים' },
+      lead: {
+        type: 'object',
+        properties: {
+          opening: { type: 'string', description: 'פסקת פתיחה בלי כותרת, 2-3 משפטים שמתארים את המצב מנקודת מבט ההורה' },
+          paragraphs: {
+            type: 'array',
+            description: '3-4 פסקאות, לכל אחת כותרת קצרה (2-4 מילים, למשל "מה הזכות") ו-2-4 משפטים',
+            items: {
+              type: 'object',
+              properties: { heading: { type: 'string' }, text: { type: 'string' } },
+              required: ['heading', 'text'],
+              additionalProperties: false
+            }
+          },
+          closing: { type: 'string', description: 'משפט סיום אחד שמזמין לכתוב לעמותה, למשל "לא בטוחים אם זה חל עליכם? כתבו לנו, נעזור לכם להבין מה מגיע."' }
+        },
+        required: ['opening', 'paragraphs', 'closing'],
+        additionalProperties: false
+      },
+      right: {
+        type: 'object',
+        description: 'מדור "זכות השבוע": היבט מעשי אחד קשור לנושא',
+        properties: {
+          heading: { type: 'string', description: 'כותרת קצרה, עד 45 תווים, בלי המילים "זכות השבוע"' },
+          text: { type: 'string', description: '60-110 מילים' }
+        },
+        required: ['heading', 'text'],
+        additionalProperties: false
+      },
+      dontMiss: { type: 'array', description: 'מדור "לא לפספס": 3 משפטים מעשיים, כל אחד משפט אחד, בלי תאריכים', items: { type: 'string' } },
+      tip: { type: 'string', description: 'מדור "טיפ מהשטח": 50-90 מילים, עצה פרקטית אחת שהורה יכול ליישם' },
+      editorNotes: { type: 'array', description: 'נקודות שהעורך האנושי צריך לאמת מול גורם מקצועי לפני הפרסום (תנאי זכאות, הליכים, שינויים חדשים)', items: { type: 'string' } },
+      sourcesUsed: { type: 'array', description: 'כתובות המקורות שבאמת שימשו לכתיבה', items: { type: 'string' } }
+    },
+    required: ['subject', 'title', 'sub', 'lead', 'right', 'dontMiss', 'tip', 'editorNotes', 'sourcesUsed'],
+    additionalProperties: false
+  };
+
+  const SCORE_SCHEMA = {
+    type: 'object',
+    properties: {
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            index: { type: 'integer', description: 'מספר הפריט כפי שניתן' },
+            relevance: { type: 'integer', description: '0-10: עד כמה הפריט חשוב להורים לילדים עם צרכים מיוחדים בישראל. 8-10 זכות/קצבה/שירות/שינוי הליך שנוגע ישירות לילדים עם מוגבלות ולמשפחותיהם. 5-7 רלוונטי חלקית. 0-4 לא רלוונטי: מודעות דרושים, גיוס תרומות, אירועים פנימיים, חדשות כלליות.' },
+            summary: { type: 'string', description: 'משפט אחד בעברית, עד 160 תווים, מה חדש ולמי זה נוגע. בלי סכומים ואחוזים.' },
+            topic: { type: 'string', description: 'תגית נושא קצרה: קצבאות, חינוך, בריאות, רווחה, תעסוקת הורים, נגישות, הטבות, כללי' }
+          },
+          required: ['index', 'relevance', 'summary', 'topic'],
+          additionalProperties: false
+        }
+      }
+    },
+    required: ['items'],
+    additionalProperties: false
+  };
+
+  const SEARCH_SCHEMA = {
+    type: 'object',
+    properties: {
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            url: { type: 'string' },
+            date: { type: 'string', description: 'YYYY-MM-DD אם ידוע, אחרת מחרוזת ריקה' },
+            summary: { type: 'string', description: 'משפט אחד בעברית' },
+            source: { type: 'string', description: 'שם האתר או הגוף' },
+            relevance: { type: 'integer', description: '0-10' }
+          },
+          required: ['title', 'url', 'date', 'summary', 'source', 'relevance'],
+          additionalProperties: false
+        }
+      }
+    },
+    required: ['items'],
+    additionalProperties: false
+  };
+
+  // בלי user_location: קוד המדינה IL לא נתמך בכלי החיפוש; ההקשר הישראלי מגיע מההנחיות והחיפושים בעברית.
+  const WEB_SEARCH_TOOL = {
+    type: 'web_search_20260209',
+    name: 'web_search',
+    max_uses: 10
+  };
+
+  function clip(text, max) {
+    const value = String(text || '').trim();
+    return value.length > max ? `${value.slice(0, max - 1).trimEnd()}…` : value;
+  }
+
+  function decodeEntities(value) {
+    return String(value)
+      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+      .replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  }
+
+  function stripTags(html) {
+    return decodeEntities(String(html).replace(/<(script|style|noscript|svg)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' '))
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  function cleanText(value) {
+    return String(value || '')
+      .replace(/\s*[—–]\s*/g, ', ')
+      .replace(/,\s*,/g, ',')
+      .replace(/\s+([,.!?])/g, '$1')
+      .replace(/[ \t]+/g, ' ')
+      .trim();
+  }
+
+  // מחלץ JSON מתוך תשובה טקסטואלית (כשאין פורמט מובנה, למשל אחרי חיפוש ברשת).
+  function extractJson(text) {
+    const fenced = String(text).match(/```(?:json)?\s*([\s\S]*?)```/);
+    const candidates = [fenced ? fenced[1] : null, String(text)];
+    for (const candidate of candidates) {
+      if (!candidate) continue;
+      const start = candidate.search(/[{[]/);
+      if (start < 0) continue;
+      const end = Math.max(candidate.lastIndexOf('}'), candidate.lastIndexOf(']'));
+      if (end <= start) continue;
+      try { return JSON.parse(candidate.slice(start, end + 1)); } catch (error) { /* ננסה את המועמד הבא */ }
+    }
+    return null;
+  }
+
+  // אחרי חיפוש ברשת הטקסט מגיע בכמה בלוקים (ציטוטים חותכים אותו גם באמצע מחרוזת), לכן מחברים בלי מפריד.
+  function textOf(content) {
+    return (content || []).filter(block => block.type === 'text').map(block => block.text).join('').trim();
+  }
+
+  // טקסט הכתבה מתוך דף HTML: בלי ניווט, סקריפטים וטפסים; מעדיף <article> או <main>.
+  function extractArticle(html) {
+    // אתרי ASP.NET (ביטוח לאומי) עוטפים את כל הדף ב-<form>, לכן מסירים רק שדות קלט ולא את הטופס כולו.
+    let body = String(html)
+      .replace(/<(script|style|noscript|svg|template|iframe|select|textarea|button)[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<input\b[^>]*>/gi, ' ')
+      .replace(/<(nav|header|footer|aside)\b[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ');
+    const toText = fragment => stripTags(fragment.replace(/<\/(p|div|li|h[1-6]|tr|br|section)>|<br\s*\/?>/gi, '\n'))
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n\s*\n+/g, '\n')
+      .trim();
+    const main = body.match(/<article\b[\s\S]*?<\/article>/i) || body.match(/<main\b[\s\S]*?<\/main>/i);
+    // באתרים כמו ביטוח לאומי ה-<main> מכיל רק כותרת; אז לוקחים את כל הדף.
+    const focused = main ? toText(main[0]) : '';
+    return focused.length >= 300 ? focused : toText(body);
+  }
+
+  /* ---------- דירוג ---------- */
+
+  function scoreRequest(batch, startIndex) {
+    const listing = batch.map((item, offset) =>
+      `${startIndex + offset + 1}. [${item.sourceName}] ${item.title}${item.date ? ` (${item.date})` : ''}\n   ${item.link}${item.summary ? `\n   ${clip(item.summary, 240)}` : ''}`
+    ).join('\n');
+    return {
+      system: `אתם עורכי התוכן של הניוזלטר השבועי של עמותת "הורה ומיוחד". ${AUDIENCE}\nהמשימה: לדרג פריטים שנאספו מאתרים ומ-RSS לפי מידת החשיבות שלהם לקהל, ולסכם כל פריט במשפט. הציון חייב לשקף תועלת ישירה להורים: זכות חדשה או שהשתנתה, קצבה, הליך, שירות, מועד פתיחת הרשמה, הנחיה רשמית. פריטים שאינם קשורים למוגבלות או לצרכים מיוחדים, מודעות דרושים, גיוס תרומות, פוליטיקה וברכות לחג מקבלים ציון נמוך. בלי סכומים ואחוזים בסיכום.`,
+      user: `דרגו את כל ${batch.length} הפריטים הבאים והחזירו שורה לכל פריט לפי מספרו:\n\n${listing}`,
+      schema: SCORE_SCHEMA,
+      effort: 'medium'
+    };
+  }
+
+  function applyScores(parsed, results, total) {
+    for (const row of (parsed && parsed.items) || []) {
+      const position = Number(row.index) - 1;
+      if (position < 0 || position >= total || results[position]) continue;
+      results[position] = {
+        relevance: Math.max(0, Math.min(10, Math.round(Number(row.relevance) || 0))),
+        summary: cleanText(clip(row.summary, 220)),
+        topic: cleanText(clip(row.topic, 30))
+      };
+    }
+    return results;
+  }
+
+  /* ---------- חיפוש ברשת ---------- */
+
+  function searchRequest({ instructions = '', today }) {
+    return {
+      system: `אתם חוקרי התוכן של הניוזלטר של עמותת "הורה ומיוחד". ${AUDIENCE}\nהמשימה: לאתר ברשת עדכונים חדשים מ-45 הימים האחרונים (היום ${today}) שחשובים לקהל: זכויות וקצבאות (ביטוח לאומי, גמלת ילד נכה, קצבאות, ניידות), חינוך מיוחד (ועדות, סייעות, הסעות, הרשמה), בריאות (התפתחות הילד, סל שיקום, סל תקשורת, קופות חולים), רווחה (משרד הרווחה, נופשונים, מסגרות), הטבות ברשויות, הנחיות ממשלתיות חדשות מאתר gov.il, ופרסומים של ארגוני סיוע בישראל. חפשו בעברית, בכמה חיפושים שונים. העדיפו מקורות רשמיים (btl.gov.il, gov.il, kolzchut.org.il, health.gov.il, education.gov.il) וארגונים מוכרים. אל תמציאו כתובות: כל URL חייב להופיע בתוצאות החיפוש.`,
+      user: `חפשו וחזרו עם עד 12 העדכונים החשובים ביותר. ${instructions ? `דגש מיוחד: ${instructions}\n` : ''}בסיום, החזירו אך ורק JSON בצורה: {"items":[{"title":"","url":"","date":"YYYY-MM-DD או ריק","summary":"משפט אחד בעברית בלי סכומים ואחוזים","source":"שם האתר","relevance":0}]}`,
+      structureSystem: 'המירו את הטקסט הבא לרשימת פריטים מובנית. אל תוסיפו פריטים שלא מופיעים בטקסט.',
+      schema: SEARCH_SCHEMA,
+      tool: WEB_SEARCH_TOOL,
+      effort: 'medium'
+    };
+  }
+
+  function normalizeSearchItems(parsed) {
+    return ((parsed && parsed.items) || [])
+      .filter(item => item && /^https?:\/\//i.test(String(item.url || '')))
+      .map(item => ({
+        title: cleanText(item.title), link: String(item.url).trim(), date: /^\d{4}-\d{2}-\d{2}$/.test(item.date || '') ? item.date : null,
+        summary: cleanText(item.summary), source: cleanText(item.source), relevance: Number(item.relevance)
+      }));
+  }
+
+  /* ---------- ניסוח ---------- */
+
+  function draftRequest({ pages, instructions = '', styleSample = '' }) {
+    const usable = pages.filter(page => page.ok);
+    const sourcesBlock = pages.map((page, index) => {
+      const head = `### מקור ${index + 1}: ${page.finding.title}\nכתובת: ${page.finding.link}${page.finding.sourceName ? `\nמאתר: ${page.finding.sourceName}` : ''}${page.finding.aiSummary ? `\nתקציר: ${page.finding.aiSummary}` : ''}`;
+      const body = page.ok ? page.text : `(לא ניתן היה לקרוא את הדף: ${page.error || 'תוכן קצר מדי'}. הסתמכו על הכותרת והתקציר בלבד.)`;
+      return `${head}\n\n${body}`;
+    }).join('\n\n');
+    const system = `אתם הכותבים של הניוזלטר השבועי של עמותת "הורה ומיוחד" (הסלוגן: "ביחד אנחנו חזקים"). ${AUDIENCE}
+מטרת הגיליון: ערך, לא שיווק. בכל גיליון: כתבה ראשית על זכות או נושא אחד, מדור "זכות השבוע" עם היבט מעשי, "לא לפספס" עם שלושה דגשים, ו"טיפ מהשטח".
+
+${CONTENT_RULES}
+
+סגנון: כמו הדוגמה המצורפת. פסקאות קצרות, כותרת מודגשת קצרה לכל פסקה, משפטים ברורים, חום בלי פאתוס. אורך הכתבה הראשית: 280-420 מילים.${styleSample ? `\n\nדוגמה לגיליון שפורסם (לסגנון בלבד, לא לתוכן):\n"""\n${clip(styleSample, 6000)}\n"""` : ''}`;
+    const user = `כתבו גיליון חדש על בסיס המקורות הבאים.${instructions.trim() ? `\n\nהנחיות העורך: ${instructions.trim()}` : ''}${usable.length ? '' : '\n\n(אין מקורות קריאים. כתבו על הנושא שבהנחיות מתוך ידע כללי, בזהירות, וציינו ב-editorNotes מה צריך אימות.)'}
+
+${sourcesBlock || '(לא נבחרו מקורות)'}
+
+זכרו: בלי סכומים, בלי אחוזים, בלי תאריכים, בלי קו מפריד ארוך, בלי סיפורים. ב-editorNotes פרטו כל עובדה שכדאי לאמת מול גורם מקצועי לפני השליחה.`;
+    return { system, user, schema: DRAFT_SCHEMA, effort: 'high' };
+  }
+
+  function normalizeDraft(draft, pages) {
+    return {
+      subject: cleanText(draft.subject),
+      title: cleanText(draft.title),
+      sub: cleanText(draft.sub),
+      lead: {
+        opening: cleanText(draft.lead.opening),
+        paragraphs: (draft.lead.paragraphs || []).map(p => ({ heading: cleanText(p.heading).replace(/[.:]+$/, ''), text: cleanText(p.text) })).filter(p => p.text),
+        closing: cleanText(draft.lead.closing)
+      },
+      right: { heading: cleanText(draft.right.heading), text: cleanText(draft.right.text) },
+      dontMiss: (draft.dontMiss || []).map(cleanText).filter(Boolean).slice(0, 4),
+      tip: cleanText(draft.tip),
+      editorNotes: (draft.editorNotes || []).map(cleanText).filter(Boolean),
+      sourcesUsed: (draft.sourcesUsed || []).filter(url => /^https?:/i.test(String(url))),
+      readProblems: pages.filter(page => !page.ok).map(page => page.finding.title)
+    };
+  }
+
+  // מעבד תשובת מודל בפורמט מובנה: בודק סיבת עצירה ומפענח את ה-JSON.
+  function parseStructured(message) {
+    if (message.stop_reason === 'refusal') throw new Error('שירות ה-AI סירב לבקשה הזו.');
+    if (message.stop_reason === 'max_tokens') throw new Error('התשובה של ה-AI נקטעה. נסו עם פחות פריטים.');
+    const text = textOf(message.content);
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      const parsed = extractJson(text);
+      if (parsed) return parsed;
+      throw new Error('התשובה של ה-AI לא הייתה במבנה הצפוי.');
+    }
+  }
+
+  return {
+    MODEL, FALLBACK_BETA, PAGE_TEXT_LIMIT, AUDIENCE, CONTENT_RULES, DRAFT_SCHEMA, SCORE_SCHEMA, SEARCH_SCHEMA, WEB_SEARCH_TOOL,
+    clip, stripTags, cleanText, extractJson, textOf, extractArticle,
+    scoreRequest, applyScores, searchRequest, normalizeSearchItems, draftRequest, normalizeDraft, parseStructured
+  };
+});
+
+// תבנית הגיליון: משכפלת אחד לאחד את מבנה הגיליונות שפורסמו באתר (גרסת אתר, כולל
+// תגי OG וסרגל "כל הגיליונות"), ומחליפה רק את התוכן. כל טקסט שמגיע מה-AI עובר
+// escape; **הדגשה** הופכת ל-<strong>. אין כאן שום דבר שמשנה מבנה, צבעים או כתובות.
+// הקובץ משמש גם בדסקטופ (Node) וגם בדף הניהול באתר (דפדפן, window.NewsletterTemplate).
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.NewsletterTemplate = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+
+function inline(value) {
+  return escapeHtml(value).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*/g, '');
+}
+
+function prettyDate(date) {
+  const [year, month, day] = String(date).split('-');
+  return `${day}.${month}.${year}`;
+}
+
+function attribute(value) {
+  return escapeHtml(String(value ?? '').replace(/\s+/g, ' ').trim());
+}
+
+function renderLead(lead) {
+  const parts = [];
+  if (lead.opening) parts.push(`<p style="margin:0 0 10px 0;">${inline(lead.opening)}</p>`);
+  for (const paragraph of lead.paragraphs || []) {
+    const heading = paragraph.heading ? `<strong style="color:#562E8C;">${escapeHtml(paragraph.heading)}.</strong> ` : '';
+    parts.push(`<p style="margin:0 0 10px 0;">${heading}${inline(paragraph.text)}</p>`);
+  }
+  if (lead.closing) parts.push(`<p style="margin:0;"><span style="color:#562E8C; font-weight:700;">${inline(lead.closing)}</span></p>`);
+  return parts.map(part => `                ${part}`).join('\n');
+}
+
+function renderDontMiss(items) {
+  return items.map(item => `• ${inline(item)}`).join('<br>\n                    ');
+}
+
+// content: { title, sub, lead:{opening, paragraphs:[{heading,text}], closing}, right:{heading,text}, dontMiss:[...], tip }
+function renderIssue({ n, date, content }) {
+  const dateLabel = prettyDate(date);
+  const description = attribute(content.sub);
+  const title = attribute(content.title);
+  return `<!DOCTYPE html>
+<!--
+  הורה ומיוחד · הניוזלטר השבועי · גיליון ${n} · ${dateLabel} (גרסת אתר)
+-->
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="utf-8">
+  <!-- Google Analytics 4 · מעקב צפיות, מקורות תנועה ולחיצות (המזהה מוגדר בקובץ analytics.js) -->
+  <script src="../analytics.js" defer></script>
+  <!-- תפריט נגישות (גרסת האתר בלבד; לקוחות מייל מתעלמים מסקריפטים) -->
+  <script src="../a11y-widget.js" defer></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>הורה ומיוחד · הניוזלטר השבועי · גיליון ${n}</title>
+  <meta name="description" content="${description}">
+  <!-- Open Graph · כרטיס התצוגה כשמשתפים את הקישור בוואטסאפ -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="הורה ומיוחד">
+  <meta property="og:locale" content="he_IL">
+  <meta property="og:title" content="${title}">
+  <meta property="og:description" content="${description}">
+  <meta property="og:url" content="https://ho-me.org.il/newsletter/${date}.html">
+  <meta property="og:image" content="https://ho-me.org.il/logo-horeh-umeyuhad.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="https://ho-me.org.il/favicon.ico">
+  <style>
+    .backbar{ max-width:600px; margin:0 auto; padding:14px 16px 0 16px; box-sizing:border-box; }
+    .backbar a{ display:inline-block; color:#562E8C; text-decoration:none; font-size:13px; font-weight:700; background:#fff; padding:8px 16px; border-radius:20px; border:1px solid #e3def0; }
+    body{ margin:0; padding:0; background-color:#eceaf2; font-family:Arial,'Heebo','Segoe UI',Tahoma,sans-serif; }
+    @media only screen and (max-width:640px){
+      .email{ width:100% !important; }
+      .px{ padding-left:14px !important; padding-right:14px !important; }
+      .h-lead{ font-size:23px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; background-color:#eceaf2; font-family:Arial, 'Heebo', 'Segoe UI', Tahoma, sans-serif;">
+
+  <div class="backbar"><a href="/newsletter/">← כל הגיליונות</a></div>
+
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0;">${escapeHtml(content.sub)}</div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#eceaf2" style="background-color:#eceaf2;">
+    <tr>
+      <td align="center" style="padding:16px 10px;">
+        <table role="presentation" width="100%" class="email" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="max-width:600px; width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden;">
+
+          <!-- מאסטהד -->
+          <tr>
+            <td class="px" align="center" style="padding:20px 18px 10px 18px;">
+              <a href="https://ho-me.org.il/" target="_blank" rel="noopener" style="text-decoration:none;"><img src="https://ho-me.org.il/logo-horeh-umeyuhad.webp" width="170" alt="הורה ומיוחד · ביחד אנחנו חזקים" style="width:170px; max-width:80%; height:auto; display:block; margin:0 auto; border:0; outline:none;"></a>
+              <div style="color:#562E8C; font-size:12px; font-weight:800; letter-spacing:0.3px; margin-top:10px;">הניוזלטר השבועי להורים לילדים מיוחדים</div>
+              <div style="color:#6f5f96; font-size:12px; font-weight:700; margin-top:3px;">גיליון ${n} · ${dateLabel}</div>
+            </td>
+          </tr>
+          <tr><td class="px" style="padding:0 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td height="3" bgcolor="#562E8C" style="height:3px; background-color:#562E8C; font-size:0; line-height:3px;">&nbsp;</td></tr></table></td></tr>
+          <tr><td class="px" style="padding:2px 18px 0 18px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td height="1" bgcolor="#562E8C" style="height:1px; background-color:#562E8C; font-size:0; line-height:1px;">&nbsp;</td></tr></table></td></tr>
+
+          <!-- כתבת השבוע -->
+          <tr>
+            <td class="px" style="padding:20px 18px 6px 18px;" align="right">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:12px;"><tr><td bgcolor="#562E8C" style="background-color:#562E8C; color:#ffffff; font-size:12px; font-weight:800; padding:4px 12px; border-radius:4px; letter-spacing:0.5px;">כתבת השבוע</td></tr></table>
+              <div class="h-lead" style="color:#222222; font-size:25px; font-weight:800; line-height:1.3; margin-bottom:6px;">${escapeHtml(content.title)}</div>
+              <div style="color:#6f5f96; font-size:13px; font-weight:600; margin-bottom:14px;">${escapeHtml(content.sub)}</div>
+              <div style="color:#333333; font-size:15px; line-height:1.85;">
+${renderLead(content.lead || {})}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:14px 18px 8px 18px;" align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td style="padding:0 3px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="9" height="9" bgcolor="#EA6A4C" style="width:9px; height:9px; background-color:#EA6A4C; border-radius:50%; font-size:0; line-height:9px;">&nbsp;</td></tr></table></td><td style="padding:0 3px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="13" height="13" bgcolor="#FFD455" style="width:13px; height:13px; background-color:#FFD455; border-radius:3px; font-size:0; line-height:13px;">&nbsp;</td></tr></table></td><td style="padding:0 3px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="11" height="11" bgcolor="#562E8C" style="width:11px; height:11px; background-color:#562E8C; border-radius:3px; font-size:0; line-height:11px;">&nbsp;</td></tr></table></td><td style="padding:0 3px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="15" height="15" bgcolor="#1CA6A6" style="width:15px; height:15px; background-color:#1CA6A6; border-radius:4px; font-size:0; line-height:15px;">&nbsp;</td></tr></table></td><td style="padding:0 3px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="11" height="11" bgcolor="#562E8C" style="width:11px; height:11px; background-color:#562E8C; border-radius:3px; font-size:0; line-height:11px;">&nbsp;</td></tr></table></td><td style="padding:0 3px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="13" height="13" bgcolor="#FFD455" style="width:13px; height:13px; background-color:#FFD455; border-radius:3px; font-size:0; line-height:13px;">&nbsp;</td></tr></table></td><td style="padding:0 3px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="9" height="9" bgcolor="#EA6A4C" style="width:9px; height:9px; background-color:#EA6A4C; border-radius:50%; font-size:0; line-height:9px;">&nbsp;</td></tr></table></td></tr></table>
+            </td>
+          </tr>
+          <!-- זכות השבוע -->
+          <tr>
+            <td class="px" style="padding:6px 18px;">
+              <div style="border:1px solid #ece8f4; border-radius:10px; overflow:hidden;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td bgcolor="#562E8C" style="background-color:#562E8C; color:#ffffff; font-size:12px; font-weight:800; padding:9px 15px; letter-spacing:0.3px;">זכות השבוע · ${escapeHtml(content.right?.heading || '')}</td></tr></table>
+                <div style="padding:15px;" align="right"><div style="color:#444444; font-size:14px; line-height:1.75;">${inline(content.right?.text || '')}</div></div>
+              </div>
+            </td>
+          </tr>
+          <!-- לא לפספס -->
+          <tr>
+            <td class="px" style="padding:6px 18px;">
+              <div style="border:1px solid #f3ead0; border-radius:10px; overflow:hidden;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td bgcolor="#FFD455" style="background-color:#FFD455; color:#3d2a06; font-size:12px; font-weight:800; padding:9px 15px; letter-spacing:0.3px;">&#128204; לא לפספס</td></tr></table>
+                <div style="padding:15px;" align="right">
+                  <div style="color:#5a4500; font-size:14px; line-height:1.85;">
+                    ${renderDontMiss(content.dontMiss || [])}
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <!-- טיפ מהשטח -->
+          <tr>
+            <td class="px" style="padding:6px 18px;">
+              <div style="border:1px solid #f6e0d8; border-radius:10px; overflow:hidden;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td bgcolor="#EA6A4C" style="background-color:#EA6A4C; color:#3d1405; font-size:12px; font-weight:800; padding:9px 15px; letter-spacing:0.3px;">&#128161; טיפ מהשטח</td></tr></table>
+                <div style="padding:15px;" align="right"><div style="color:#444444; font-size:14px; line-height:1.75;">${inline(content.tip || '')}</div></div>
+              </div>
+            </td>
+          </tr>
+
+          <!-- 3 משבצות פעולה · טבלה קבועה של 3 עמודות, שורה אחת גם בנייד -->
+          <tr>
+            <td class="px" align="center" style="padding:12px 15px 16px 15px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%; max-width:540px; margin:0 auto; table-layout:fixed;">
+                <tr>
+                  <td width="33%" valign="top" style="width:33%; padding:0 3px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f4f1fa" style="background-color:#f4f1fa; border:1px solid #e3def0; border-radius:10px;">
+                      <tr><td bgcolor="#f4f1fa" align="center" valign="top" style="background-color:#f4f1fa; padding:10px 4px 10px 4px;">
+                        <div style="font-size:17px; line-height:1; margin-bottom:4px;">&#10067;</div>
+                        <div style="color:#562E8C; font-size:13px; font-weight:800; line-height:1.25; margin-bottom:3px;">שאלו אותנו</div>
+                        <div style="color:#6b6b6b; font-size:12px; line-height:1.35; margin-bottom:8px;">שאלה על זכות?</div>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr><td bgcolor="#562E8C" align="center" style="background-color:#562E8C; border-radius:14px;"><a href="mailto:a@ho-me.org.il?subject=%D7%A9%D7%90%D7%9C%D7%94%20%D7%9C%D7%9E%D7%93%D7%95%D7%A8%20%D7%A9%D7%90%D7%9C%D7%95%20%D7%90%D7%95%D7%AA%D7%A0%D7%95" target="_blank" rel="noopener" style="display:inline-block; color:#ffffff; text-decoration:none; font-size:12px; font-weight:800; padding:6px 10px; border-radius:14px; line-height:1.2;">לשאלה</a></td></tr></table>
+                      </td></tr>
+                    </table>
+                  </td>
+                  <td width="33%" valign="top" style="width:33%; padding:0 3px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#fff3ef" style="background-color:#fff3ef; border:1px solid #f6e0d8; border-radius:10px;">
+                      <tr><td bgcolor="#fff3ef" align="center" valign="top" style="background-color:#fff3ef; padding:10px 4px 10px 4px;">
+                        <div style="font-size:17px; line-height:1; margin-bottom:4px;">&#127760;</div>
+                        <div style="color:#b03e22; font-size:13px; font-weight:800; line-height:1.25; margin-bottom:3px;">האתר שלנו</div>
+                        <div style="color:#6b6b6b; font-size:12px; line-height:1.35; margin-bottom:8px;">בודקי זכאות ומדריכים</div>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr><td bgcolor="#EA6A4C" align="center" style="background-color:#EA6A4C; border-radius:14px;"><a href="https://ho-me.org.il/" target="_blank" rel="noopener" style="display:inline-block; color:#3d1405; text-decoration:none; font-size:12px; font-weight:800; padding:6px 10px; border-radius:14px; line-height:1.2;">לאתר</a></td></tr></table>
+                      </td></tr>
+                    </table>
+                  </td>
+                  <td width="33%" valign="top" style="width:33%; padding:0 3px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f0fafa" style="background-color:#f0fafa; border:1px solid #d8eded; border-radius:10px;">
+                      <tr><td bgcolor="#f0fafa" align="center" valign="top" style="background-color:#f0fafa; padding:10px 4px 10px 4px;">
+                        <div style="font-size:17px; line-height:1; margin-bottom:4px;">&#9993;</div>
+                        <div style="color:#0d6b6a; font-size:13px; font-weight:800; line-height:1.25; margin-bottom:3px;">קבוצת המייל</div>
+                        <div style="color:#6b6b6b; font-size:12px; line-height:1.35; margin-bottom:8px;">עדכונים בין הגיליונות</div>
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr><td bgcolor="#1CA6A6" align="center" style="background-color:#1CA6A6; border-radius:14px;"><a href="https://groups.google.com/a/ho-me.org.il/g/bs" target="_blank" rel="noopener" style="display:inline-block; color:#06302f; text-decoration:none; font-size:12px; font-weight:800; padding:6px 10px; border-radius:14px; line-height:1.2;">להצטרפות</a></td></tr></table>
+                      </td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- פוטר -->
+          <tr>
+            <td class="px" bgcolor="#562E8C" style="background-color:#562E8C; padding:20px 18px 24px 18px;" align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:12px;"><tr>
+                <td style="padding:0 2px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="11" height="11" bgcolor="#EA6A4C" style="width:11px; height:11px; background-color:#EA6A4C; border-radius:3px; font-size:0; line-height:11px;">&nbsp;</td></tr></table></td>
+                <td style="padding:0 2px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="11" height="11" bgcolor="#FFD455" style="width:11px; height:11px; background-color:#FFD455; border-radius:3px; font-size:0; line-height:11px;">&nbsp;</td></tr></table></td>
+                <td style="padding:0 2px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="11" height="11" bgcolor="#ffffff" style="width:11px; height:11px; background-color:#ffffff; border-radius:3px; font-size:0; line-height:11px;">&nbsp;</td></tr></table></td>
+                <td style="padding:0 2px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="11" height="11" bgcolor="#1CA6A6" style="width:11px; height:11px; background-color:#1CA6A6; border-radius:3px; font-size:0; line-height:11px;">&nbsp;</td></tr></table></td>
+              </tr></table>
+              <div style="color:#ffffff; font-size:17px; font-weight:800; margin-bottom:2px;">הורה ומיוחד</div>
+              <div style="color:#FFD455; font-size:12px; font-weight:700; margin-bottom:10px;">ביחד אנחנו חזקים</div>
+              <div style="color:#cbbde8; font-size:12px; line-height:1.8;">
+                עמותה רשומה ע״ר 580715282<br>
+                בית שמש, פומבדיתא 1 · ירושלים, הצבי 15<br>
+                02-5023456 · <a href="mailto:a@ho-me.org.il" style="color:#FFD455; text-decoration:none;">a@ho-me.org.il</a> · <a href="https://ho-me.org.il/" style="color:#FFD455; text-decoration:none;">ho-me.org.il</a>
+              </div>
+              <div style="margin-top:12px; color:#b8abd8; font-size:12px; line-height:1.6;">
+                המידע כללי, אינו כולל סכומים, ואינו תחליף לייעוץ אישי. הסכומים והתנאים מתעדכנים בתחילת כל שנה.<br>
+                הדף עוצב לפי תקן ישראלי 5568 (WCAG 2.1 AA). <a href="https://ho-me.org.il/" style="color:#FFD455; text-decoration:underline;">להצהרת הנגישות ולתפריט הנגישות באתר</a><br>
+                <a href="https://ho-me.org.il/newsletter/" style="color:#cbbde8;">כל הגיליונות</a>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
+`;
+}
+
+// בדיקות התוכן של CLAUDE.md סעיף 6.8 על גיליון מוכן.
+function contentProblems(html) {
+  const text = html.replace(/<(style|script)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ');
+  const count = pattern => (html.match(pattern) || []).length;
+  const problems = [];
+  if (/o@ho-me/i.test(html)) problems.push('מופיעה הכתובת o@ho-me.org.il');
+  if (/[—–]/.test(text)) problems.push('יש בטקסט קו מפריד ארוך');
+  if (/₪|ש["״]ח|\d\s*%|\d[\d,.]*\s*שקל|אחוז/.test(text)) problems.push('נראה שיש בטקסט סכום או אחוז');
+  if (/\b(השבוע|עכשיו|לאחרונה|החודש|השנה הזו|לפני החגים)\b/.test(text.replace(/כתבת השבוע|זכות השבוע/g, ''))) problems.push('יש ניסוח תלוי זמן ("השבוע", "עכשיו" וכדומה)');
+  if (count(/<tr[\s>]/gi) !== count(/<\/tr>/gi)) problems.push('מספר תגי <tr> ו-</tr> לא שווה');
+  if (count(/<td[\s>]/gi) !== count(/<\/td>/gi)) problems.push('מספר תגי <td> ו-</td> לא שווה');
+  return problems;
+}
+
+return { renderIssue, contentProblems, escapeHtml, prettyDate };
+});
+
+// שכבת החיבור של דף הניהול באתר: מממשת את אותו ממשק newsletterApp של אפליקציית הדסקטופ.
+// ניהול הגיליונות: קריאות fetch לפונקציית /api/newsletter-admin.
+// מנוע העדכונים: המקורות והממצאים נשמרים בדפדפן (localStorage), קריאת האתרים נעשית דרך
+// השרת (fetchSource / fetchArticle, כי הדפדפן חסום ב-CORS), וה-AI נקרא ישירות מהדפדפן
+// עם המפתח שמוגדר ב-Vercel. מעקב אוטומטי ברקע והודעות Windows קיימים רק בדסקטופ.
+// הקובץ admin/app.js נבנה אוטומטית: discover-core + ai-core + template + web-bridge + renderer (npm run build-admin).
 (function () {
   const API = '/api/newsletter-admin';
+  const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+  const core = window.AiCore;
+  const dcore = window.DiscoverCore;
+  const template = window.NewsletterTemplate;
 
   function savedAuth() {
     return localStorage.getItem('newsletter-auth') || null;
@@ -36,20 +658,461 @@
     return btoa(unescape(encodeURIComponent(`${email}:${password}`)));
   }
 
-  const desktopOnly = () => Promise.reject(new Error('איתור עדכונים וניסוח עם AI זמינים באפליקציית הדסקטופ בלבד.'));
+  /* ---------- אחסון מקומי של מנוע העדכונים ---------- */
+
+  const store = {
+    get(key, fallback) {
+      try {
+        const raw = localStorage.getItem(`nl.${key}`);
+        return raw === null ? fallback : JSON.parse(raw);
+      } catch (error) {
+        return fallback;
+      }
+    },
+    set(key, value) {
+      localStorage.setItem(`nl.${key}`, JSON.stringify(value));
+      return value;
+    }
+  };
+
+  const DEFAULT_SETTINGS = { monitor: { enabled: false, intervalHours: 6, notify: false, webSearch: false }, manualWebSearch: true, startWithWindows: false, keepInTray: false };
+
+  function getSettings() {
+    const stored = store.get('settings', {});
+    return { ...DEFAULT_SETTINGS, ...stored, monitor: { ...DEFAULT_SETTINGS.monitor, ...(stored.monitor || {}) } };
+  }
+
+  function getSources() {
+    const stored = store.get('sources', null);
+    if (Array.isArray(stored)) return stored;
+    return store.set('sources', dcore.DEFAULT_SOURCES.map(source => ({ ...source })));
+  }
+
+  function getFindings() {
+    const stored = store.get('findings', []);
+    return Array.isArray(stored) ? stored : [];
+  }
+
+  function randomId(prefix) {
+    const bytes = new Uint8Array(5);
+    crypto.getRandomValues(bytes);
+    return `${prefix}-${[...bytes].map(b => b.toString(16).padStart(2, '0')).join('')}`;
+  }
+
+  // מזהה יציב לקישור (FNV-1a על הכתובת המנורמלת).
+  function itemKey(link) {
+    const text = dcore.normalizeLink(link);
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < text.length; i++) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return `${hash.toString(16).padStart(8, '0')}${text.length.toString(16)}`;
+  }
+
+  const listeners = { progress: new Set(), finished: new Set(), draft: new Set() };
+  function emit(name, payload) {
+    for (const listener of listeners[name]) {
+      try { listener(payload); } catch (error) { /* מאזין שבור לא עוצר את המנוע */ }
+    }
+  }
+  function subscribe(name, callback) {
+    listeners[name].add(callback);
+    return () => listeners[name].delete(callback);
+  }
+
+  /* ---------- AI ישירות מהדפדפן ---------- */
+
+  let serverKey = { value: null, checkedAt: 0 };
+  async function resolveKey() {
+    if (!savedAuth()) return null;
+    if (serverKey.value && Date.now() - serverKey.checkedAt < 10 * 60 * 1000) return serverKey.value;
+    if (!serverKey.value && Date.now() - serverKey.checkedAt < 60 * 1000) return null;
+    try {
+      const result = await call('aiKey');
+      serverKey = { value: result.key || null, checkedAt: Date.now() };
+    } catch (error) {
+      serverKey = { value: null, checkedAt: Date.now() };
+    }
+    return serverKey.value;
+  }
+
+  function describeAiError(error) {
+    if (error.status === 401) return 'מפתח ה-AI שמוגדר באתר אינו תקין או שבוטל.';
+    if (error.status === 403) return 'למפתח ה-AI אין הרשאה לפעולה הזו.';
+    if (error.status === 429) return 'חרגנו ממכסת הבקשות של שירות ה-AI. נסו שוב בעוד דקה.';
+    if (error.status === 529 || error.status === 503) return 'שירות ה-AI עמוס כרגע. נסו שוב בעוד דקה.';
+    if (error.network) return 'אין חיבור לשירות ה-AI. בדקו את החיבור לאינטרנט.';
+    return `שגיאה משירות ה-AI${error.status ? ` (${error.status})` : ''}: ${error.message}`;
+  }
+
+  async function claude(params, key) {
+    const headers = {
+      'content-type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    };
+    const attempt = async withFallback => {
+      const body = { ...params };
+      const requestHeaders = { ...headers };
+      if (withFallback) {
+        requestHeaders['anthropic-beta'] = core.FALLBACK_BETA;
+        body.fallbacks = 'default';
+      }
+      let response;
+      try {
+        response = await fetch(ANTHROPIC_URL, { method: 'POST', headers: requestHeaders, body: JSON.stringify(body) });
+      } catch (error) {
+        const failure = new Error(error.message);
+        failure.network = true;
+        throw failure;
+      }
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const failure = new Error((data.error && data.error.message) || `HTTP ${response.status}`);
+        failure.status = response.status;
+        throw failure;
+      }
+      return data;
+    };
+    try {
+      return await attempt(true);
+    } catch (error) {
+      if (error.status === 400 && /fallback|beta/i.test(error.message)) {
+        try { return await attempt(false); } catch (again) { throw new Error(describeAiError(again)); }
+      }
+      throw new Error(describeAiError(error));
+    }
+  }
+
+  async function structured(key, { system, user, schema, effort = 'medium', maxTokens = 16000 }) {
+    const message = await claude({
+      model: core.MODEL,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: 'user', content: user }],
+      output_config: { effort, format: { type: 'json_schema', schema } }
+    }, key);
+    return core.parseStructured(message);
+  }
+
+  async function scoreItems(key, items) {
+    const results = new Array(items.length).fill(null);
+    const BATCH = 40;
+    for (let start = 0; start < items.length; start += BATCH) {
+      const batch = items.slice(start, start + BATCH);
+      const parsed = await structured(key, core.scoreRequest(batch, start));
+      core.applyScores(parsed, results, items.length);
+    }
+    return results;
+  }
+
+  async function webDiscover(key) {
+    const request = core.searchRequest({ today: new Date().toISOString().slice(0, 10) });
+    const messages = [{ role: 'user', content: request.user }];
+    let message;
+    for (let round = 0; round < 6; round++) {
+      message = await claude({
+        model: core.MODEL, max_tokens: 16000, system: request.system, messages,
+        output_config: { effort: request.effort }, tools: [request.tool]
+      }, key);
+      if (message.stop_reason !== 'pause_turn') break;
+      messages.push({ role: 'assistant', content: message.content });
+    }
+    if (message.stop_reason === 'refusal') throw new Error('שירות ה-AI סירב לחיפוש.');
+    const text = core.textOf(message.content);
+    let parsed = core.extractJson(text);
+    if (!parsed || !Array.isArray(parsed.items)) {
+      parsed = await structured(key, { system: request.structureSystem, user: text || 'לא נמצאו פריטים.', schema: request.schema, effort: 'low', maxTokens: 8000 });
+    }
+    return core.normalizeSearchItems(parsed);
+  }
+
+  /* ---------- מנוע הסריקה (גרסת הדפדפן של Discovery.run) ---------- */
+
+  let running = false;
+  async function runDiscovery({ webSearch }) {
+    if (running) throw new Error('סריקה כבר רצה. המתינו לסיומה.');
+    running = true;
+    const startedAt = new Date().toISOString();
+    try {
+      const sources = getSources();
+      const seen = store.get('seen', {});
+      const findings = getFindings();
+      const known = new Set(findings.map(finding => finding.key));
+      const candidates = [];
+      const sourceResults = [];
+      const enabled = sources.filter(source => source.enabled);
+      let index = 0;
+      for (const source of enabled) {
+        index++;
+        emit('progress', { stage: 'source', index, total: enabled.length, name: source.name });
+        const firstRun = !seen[source.id];
+        const seenMap = seen[source.id] || {};
+        const now = new Date().toISOString();
+        try {
+          const { kind, items } = await call('fetchSource', { url: source.url });
+          const fresh = items.filter(item => !seenMap[itemKey(item.link)]);
+          const picked = firstRun ? items.slice(0, dcore.FIRST_RUN_CANDIDATES) : fresh;
+          for (const item of items) {
+            const key = itemKey(item.link);
+            if (!seenMap[key]) seenMap[key] = now;
+          }
+          seen[source.id] = seenMap;
+          source.kind = kind;
+          source.lastCheck = now;
+          source.lastResult = { ok: true, count: items.length, newCount: picked.length, firstRun };
+          for (const item of picked) {
+            const key = itemKey(item.link);
+            if (known.has(key)) continue;
+            known.add(key);
+            candidates.push({ ...item, key, sourceId: source.id, sourceName: source.name, via: 'source' });
+          }
+          sourceResults.push({ id: source.id, name: source.name, ok: true, count: items.length, newCount: picked.length, firstRun });
+        } catch (error) {
+          source.lastCheck = now;
+          source.lastResult = { ok: false, error: error.message };
+          sourceResults.push({ id: source.id, name: source.name, ok: false, error: error.message });
+        }
+      }
+      store.set('sources', sources);
+      store.set('seen', seen);
+
+      const key = await resolveKey();
+      let searchError = null;
+      if (webSearch && key) {
+        emit('progress', { stage: 'search' });
+        try {
+          for (const item of await webDiscover(key)) {
+            if (!item.link) continue;
+            const itemId = itemKey(item.link);
+            if (known.has(itemId)) continue;
+            known.add(itemId);
+            candidates.push({
+              title: dcore.clip(item.title, 180), link: item.link, date: item.date || null, summary: dcore.clip(item.summary || '', 320),
+              key: itemId, sourceId: 'web', sourceName: item.source || dcore.hostOf(item.link) || 'חיפוש ברשת', via: 'search',
+              relevance: typeof item.relevance === 'number' && !Number.isNaN(item.relevance) ? item.relevance : undefined
+            });
+          }
+        } catch (error) {
+          searchError = error.message;
+        }
+      }
+
+      let scoringError = null;
+      if (candidates.length && key) {
+        emit('progress', { stage: 'score', count: candidates.length });
+        try {
+          const scored = await scoreItems(key, candidates);
+          scored.forEach((result, position) => {
+            if (!result) return;
+            candidates[position].relevance = result.relevance;
+            candidates[position].aiSummary = result.summary;
+            candidates[position].topic = result.topic;
+          });
+        } catch (error) {
+          scoringError = error.message;
+        }
+      }
+      for (const candidate of candidates) {
+        if (typeof candidate.relevance !== 'number') candidate.relevance = dcore.keywordScore(candidate);
+        candidate.relevance = Math.max(0, Math.min(10, Math.round(candidate.relevance)));
+      }
+
+      const foundAt = new Date().toISOString();
+      const added = candidates.map(candidate => ({
+        id: randomId('f'), key: candidate.key, title: candidate.title, link: candidate.link, date: candidate.date,
+        summary: candidate.summary, aiSummary: candidate.aiSummary || '', topic: candidate.topic || '', relevance: candidate.relevance,
+        sourceId: candidate.sourceId, sourceName: candidate.sourceName, via: candidate.via, status: 'new', foundAt
+      }));
+      let merged = [...added, ...findings];
+      const cutoff = Date.now() - 60 * 24 * 3600 * 1000;
+      merged = merged.filter(finding => !(finding.status === 'dismissed' && Date.parse(finding.foundAt) < cutoff));
+      if (merged.length > dcore.MAX_FINDINGS) {
+        merged.sort((a, b) => (a.status === 'new' ? 0 : 1) - (b.status === 'new' ? 0 : 1) || b.foundAt.localeCompare(a.foundAt));
+        merged = merged.slice(0, dcore.MAX_FINDINGS);
+      }
+      store.set('findings', merged);
+      const important = added.filter(finding => finding.relevance >= 7);
+      const summary = {
+        startedAt, finishedAt: foundAt, mode: 'manual',
+        sourcesChecked: sourceResults.filter(result => result.ok).length,
+        sourcesFailed: sourceResults.filter(result => !result.ok).length,
+        newCount: added.length, importantCount: important.length,
+        scored: Boolean(key) && !scoringError, webSearch: Boolean(webSearch && key && !searchError),
+        searchError, scoringError
+      };
+      const status = store.get('status', {});
+      status.lastRun = foundAt;
+      status.lastSummary = summary;
+      store.set('status', status);
+      emit('finished', { summary, mode: 'manual' });
+      return { summary, sourceResults, addedCount: added.length, importantCount: important.length };
+    } finally {
+      running = false;
+    }
+  }
+
+  async function aiStatus() {
+    const key = await resolveKey();
+    return { available: Boolean(key), source: key ? 'server' : null, model: core.MODEL };
+  }
+
+  async function discoveryState() {
+    return { sources: getSources(), findings: getFindings(), status: store.get('status', {}), settings: getSettings(), ai: await aiStatus(), running };
+  }
+
+  const desktopOnly = () => Promise.reject(new Error('הפעולה הזו זמינה באפליקציית הדסקטופ בלבד.'));
   const noop = () => () => {};
 
   window.newsletterApp = {
-    // מנוע העדכונים (מעקב, התראות, ניסוח AI) רץ רק בדסקטופ; דף הווב מציג את ניהול הגיליונות בלבד.
-    features: { discovery: false, desktop: false },
+    // מנוע העדכונים רץ גם כאן; מעקב ברקע, הודעות Windows ומפתח מקומי קיימים רק בדסקטופ.
+    features: { discovery: true, monitor: false, localKey: false, desktop: false },
     openExternal(url) { window.open(url, '_blank', 'noopener'); return Promise.resolve(); },
     diagnostics() { return call('diagnostics'); },
-    discovery: { state: desktopOnly, run: desktopOnly, addSource: desktopOnly, updateSource: desktopOnly, removeSource: desktopOnly, testSource: desktopOnly, resetSources: desktopOnly, setFindingStatus: desktopOnly, onProgress: noop, onFinished: noop },
-    settings: { get: desktopOnly, set: desktopOnly, onChanged: noop },
-    ai: { status: desktopOnly, setKey: desktopOnly, testKey: desktopOnly },
-    draft: { generate: desktopOnly, onProgress: noop },
     onNavigate: noop,
     onRunDiscovery: noop,
+
+    discovery: {
+      state: discoveryState,
+      async run(options) {
+        const settings = getSettings();
+        const webSearch = options && typeof options.webSearch === 'boolean' ? options.webSearch : settings.manualWebSearch;
+        const result = await runDiscovery({ webSearch });
+        return { ...(await discoveryState()), result };
+      },
+      async addSource({ name, url }) {
+        const cleanUrl = String(url || '').trim();
+        const cleanName = String(name || '').trim() || dcore.hostOf(cleanUrl);
+        if (!/^https?:\/\/[^\s]+$/i.test(cleanUrl)) throw new Error('הכתובת צריכה להתחיל ב-https:// ולהיות כתובת של דף או של RSS.');
+        const sources = getSources();
+        if (sources.some(source => dcore.normalizeLink(source.url) === dcore.normalizeLink(cleanUrl))) throw new Error('המקור הזה כבר ברשימה.');
+        const probe = await call('fetchSource', { url: cleanUrl });
+        sources.push({ id: randomId('src'), name: cleanName, url: cleanUrl, enabled: true, kind: probe.kind, lastCheck: null, lastResult: { ok: true, count: probe.items.length, newCount: 0, probe: true } });
+        store.set('sources', sources);
+        return { sources, probeCount: probe.items.length, kind: probe.kind };
+      },
+      async updateSource(id, patch) {
+        const sources = getSources();
+        const source = sources.find(item => item.id === id);
+        if (!source) throw new Error('המקור לא נמצא.');
+        if (typeof patch.enabled === 'boolean') source.enabled = patch.enabled;
+        if (typeof patch.name === 'string' && patch.name.trim()) source.name = patch.name.trim();
+        return store.set('sources', sources);
+      },
+      async removeSource(id) {
+        const sources = getSources();
+        const remaining = sources.filter(item => item.id !== id);
+        if (remaining.length === sources.length) throw new Error('המקור לא נמצא.');
+        const seen = store.get('seen', {});
+        delete seen[id];
+        store.set('seen', seen);
+        return store.set('sources', remaining);
+      },
+      async testSource(id) {
+        const sources = getSources();
+        const source = sources.find(item => item.id === id);
+        if (!source) throw new Error('המקור לא נמצא.');
+        const now = new Date().toISOString();
+        try {
+          const { kind, items } = await call('fetchSource', { url: source.url });
+          source.kind = kind;
+          source.lastCheck = now;
+          source.lastResult = { ok: true, count: items.length, newCount: 0, probe: true };
+          store.set('sources', sources);
+          return { ok: true, kind, count: items.length, sample: items.slice(0, 3).map(item => item.title), sources };
+        } catch (error) {
+          source.lastCheck = now;
+          source.lastResult = { ok: false, error: error.message };
+          store.set('sources', sources);
+          return { ok: false, error: error.message, sources };
+        }
+      },
+      async resetSources() {
+        const custom = getSources().filter(source => String(source.id).startsWith('src-'));
+        return store.set('sources', [...dcore.DEFAULT_SOURCES.map(source => ({ ...source })), ...custom]);
+      },
+      async setFindingStatus(ids, status) {
+        if (!['new', 'used', 'dismissed'].includes(status)) throw new Error('סטטוס לא מוכר.');
+        const wanted = new Set(Array.isArray(ids) ? ids : [ids]);
+        const findings = getFindings();
+        for (const finding of findings) if (wanted.has(finding.id)) finding.status = status;
+        return store.set('findings', findings);
+      },
+      onProgress: callback => subscribe('progress', callback),
+      onFinished: callback => subscribe('finished', callback)
+    },
+
+    settings: {
+      async get() { return getSettings(); },
+      async set(patch) {
+        const current = getSettings();
+        const next = { ...current, ...patch, monitor: { ...current.monitor, ...(patch.monitor || {}) } };
+        next.monitor.enabled = false; // מעקב ברקע: דסקטופ בלבד
+        return store.set('settings', next);
+      },
+      onChanged: noop
+    },
+
+    ai: {
+      status: aiStatus,
+      setKey: () => Promise.reject(new Error('בדף הניהול באתר המפתח מגיע מהגדרות האתר ב-Vercel (ANTHROPIC_API_KEY). מפתח מקומי אפשר לשמור באפליקציית הדסקטופ.')),
+      async testKey(candidate) {
+        const key = candidate ? String(candidate).trim() : await resolveKey();
+        if (!key) throw new Error('אין מפתח לבדיקה. הגדירו ANTHROPIC_API_KEY ב-Vercel ועשו Redeploy.');
+        let response;
+        try {
+          response = await fetch(`https://api.anthropic.com/v1/models/${core.MODEL}`, { headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' } });
+        } catch (error) {
+          throw new Error('אין חיבור לשירות ה-AI. בדקו את החיבור לאינטרנט.');
+        }
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const failure = new Error((data.error && data.error.message) || `HTTP ${response.status}`);
+          failure.status = response.status;
+          throw new Error(describeAiError(failure));
+        }
+        return { ok: true, model: data.display_name || core.MODEL };
+      }
+    },
+
+    draft: {
+      async generate(request) {
+        const key = await resolveKey();
+        if (!key) throw new Error('לא הוגדר מפתח AI באתר. הגדירו ANTHROPIC_API_KEY ב-Vercel ועשו Redeploy.');
+        const wanted = new Set(request.findingIds || []);
+        const findings = getFindings();
+        const selected = findings.filter(finding => wanted.has(finding.id));
+        const instructions = String(request.instructions || '');
+        if (!selected.length && !instructions.trim()) throw new Error('בחרו לפחות עדכון אחד, או כתבו נושא והנחיות לכותב.');
+        const pages = [];
+        for (const [index, finding] of selected.entries()) {
+          emit('draft', { stage: 'read', index: index + 1, total: selected.length, title: finding.title });
+          try {
+            const result = await call('fetchArticle', { url: finding.link });
+            pages.push({ finding, text: result.text, ok: result.length > 200 });
+          } catch (error) {
+            pages.push({ finding, text: '', ok: false, error: error.message });
+          }
+        }
+        if (!pages.some(page => page.ok) && !instructions.trim()) {
+          throw new Error('לא הצלחנו לקרוא אף אחד מהמקורות שנבחרו, ולא ניתנו הנחיות. בחרו מקור אחר או כתבו נושא.');
+        }
+        emit('draft', { stage: 'write' });
+        const raw = await structured(key, { ...core.draftRequest({ pages, instructions, styleSample: String(request.styleSample || '') }), maxTokens: 16000 });
+        const draft = core.normalizeDraft(raw, pages);
+        const n = Number(request.issueNumber) || 1;
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(request.date || '') ? request.date : new Date().toISOString().slice(0, 10);
+        const html = template.renderIssue({ n, date, content: draft });
+        if (selected.length) {
+          for (const finding of findings) if (wanted.has(finding.id)) finding.status = 'used';
+          store.set('findings', findings);
+        }
+        return { html, n, date, draft, problems: template.contentProblems(html) };
+      },
+      onProgress: callback => subscribe('draft', callback)
+    },
 
     async getSession() {
       if (!savedAuth()) return null;
@@ -71,6 +1134,7 @@
       await call('ping', {}, auth);
       localStorage.setItem('newsletter-auth', auth);
       localStorage.setItem('newsletter-email', email);
+      serverKey = { value: null, checkedAt: 0 };
       const data = await call('load');
       return { email, canWrite: true, issues: data.issues, scheduled: data.scheduled, headSha: data.headSha };
     },
@@ -78,6 +1142,7 @@
     async logout() {
       localStorage.removeItem('newsletter-auth');
       localStorage.removeItem('newsletter-email');
+      serverKey = { value: null, checkedAt: 0 };
     },
 
     async load() {
@@ -1511,6 +2576,9 @@ function renderUpdates() {
   if (u.ai && u.ai.available) {
     elements.aiChip.textContent = `AI פעיל · ${u.ai.source === 'local' ? 'מפתח מהמחשב הזה' : 'מפתח מהגדרות האתר'}`;
     elements.aiChip.className = 'ai-chip on';
+  } else if (!state.canWrite) {
+    elements.aiChip.textContent = 'AI: התחברו כדי לטעון את המפתח מהאתר';
+    elements.aiChip.className = 'ai-chip off';
   } else {
     elements.aiChip.textContent = 'AI לא מוגדר · דירוג לפי מילות מפתח בלבד';
     elements.aiChip.className = 'ai-chip off';
@@ -1910,8 +2978,11 @@ async function generateDraft() {
     return;
   }
   if (!u.ai || !u.ai.available) {
-    showToast('לניסוח עם AI צריך מפתח. פתחו את "הגדרות מעקב ו-AI" והזינו מפתח Anthropic.', true);
-    openSettings();
+    const features = window.newsletterApp.features || {};
+    showToast(features.localKey
+      ? 'לניסוח עם AI צריך מפתח. פתחו את "הגדרות מעקב ו-AI" והזינו מפתח Anthropic, או התחברו כדי לקבל את המפתח מהאתר.'
+      : (state.canWrite ? 'לניסוח עם AI צריך מפתח באתר: הגדירו ANTHROPIC_API_KEY ב-Vercel ועשו Redeploy.' : 'התחברו קודם: המפתח ל-AI נטען מהאתר למשתמש מחובר.'), true);
+    if (features.localKey) openSettings();
     return;
   }
   state.pendingDraft = null;
@@ -2082,6 +3153,17 @@ async function startup() {
   if (features.discovery) {
     elements.navUpdates.hidden = false;
     elements.navSources.hidden = false;
+    if (!features.monitor) {
+      // דף הניהול באתר: אין מעקב ברקע ואין הודעות Windows; שאר המנוע זהה.
+      $('monitorRow').hidden = true;
+      $('monitorWebNote').hidden = false;
+      $('settingsMonitorSection').hidden = true;
+      $('settingsWindowsSection').hidden = true;
+    }
+    if (!features.localKey) {
+      $('aiKeyRow').hidden = true;
+      elements.aiKeyHint.textContent = 'בדף הניהול באתר המפתח מגיע מהגדרות האתר ב-Vercel (ANTHROPIC_API_KEY) ונטען אוטומטית אחרי התחברות. אפשר לשמור מפתח מקומי רק באפליקציית הדסקטופ.';
+    }
     window.newsletterApp.onNavigate(view => setView(view));
     window.newsletterApp.onRunDiscovery(() => { setView('updates'); runScan(); });
     window.newsletterApp.discovery.onFinished(event => {

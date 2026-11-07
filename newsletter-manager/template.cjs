@@ -1,6 +1,11 @@
 // תבנית הגיליון: משכפלת אחד לאחד את מבנה הגיליונות שפורסמו באתר (גרסת אתר, כולל
 // תגי OG וסרגל "כל הגיליונות"), ומחליפה רק את התוכן. כל טקסט שמגיע מה-AI עובר
 // escape; **הדגשה** הופכת ל-<strong>. אין כאן שום דבר שמשנה מבנה, צבעים או כתובות.
+// הקובץ משמש גם בדסקטופ (Node) וגם בדף הניהול באתר (דפדפן, window.NewsletterTemplate).
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.NewsletterTemplate = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, character => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -234,4 +239,5 @@ function contentProblems(html) {
   return problems;
 }
 
-module.exports = { renderIssue, contentProblems, escapeHtml, prettyDate };
+return { renderIssue, contentProblems, escapeHtml, prettyDate };
+});

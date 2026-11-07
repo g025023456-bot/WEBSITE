@@ -411,6 +411,34 @@ async function actionDiagnostics() {
   return result;
 }
 
+/* ---------- proxy for the site admin's discovery engine ---------- */
+// דף הניהול באתר לא יכול לקרוא אתרים אחרים ישירות מהדפדפן (CORS), ולכן השרת קורא
+// עבורו מקור אחד או כתבה אחת בכל קריאה. הפענוח זהה לזה של אפליקציית הדסקטופ:
+// הקבצים ב-api/lib מועתקים מ-newsletter-manager על ידי npm run build-admin (לא לערוך ידנית).
+const discover = require('./lib/discover.cjs');
+const aiCore = require('./lib/ai-core.js');
+
+function validSourceUrl(url) {
+  const value = String(url || '').trim();
+  if (!/^https?:\/\/[^\s]+$/i.test(value)) throw new Error('כתובת לא תקינה.');
+  const host = new URL(value).hostname;
+  if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|0\.|\[::1\])/i.test(host)) throw new Error('כתובת לא תקינה.');
+  return value;
+}
+
+async function actionFetchSource(payload) {
+  const url = validSourceUrl(payload.url);
+  const { kind, items } = await discover.fetchSource({ url });
+  return { ok: true, kind, items };
+}
+
+async function actionFetchArticle(payload) {
+  const url = validSourceUrl(payload.url);
+  const { text } = await discover.fetchText(url);
+  const article = aiCore.extractArticle(text);
+  return { ok: true, text: article.slice(0, aiCore.PAGE_TEXT_LIMIT), length: article.length };
+}
+
 /* ---------- handler ---------- */
 
 module.exports = async (req, res) => {
@@ -430,6 +458,8 @@ module.exports = async (req, res) => {
       // מפתח ה-AI לאפליקציית הדסקטופ (ANTHROPIC_API_KEY בהגדרות Vercel), למשתמש מחובר בלבד.
       case 'aiKey': result = { ok: true, key: aiKeyFromEnv().key }; break;
       case 'diagnostics': result = await actionDiagnostics(); break;
+      case 'fetchSource': result = await actionFetchSource(payload); break;
+      case 'fetchArticle': result = await actionFetchArticle(payload); break;
       case 'load': result = await actionLoad(); break;
       case 'readIssue': result = await actionReadIssue(payload); break;
       case 'save': result = await actionSave(payload, email); break;
