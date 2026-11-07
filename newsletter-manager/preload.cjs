@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('newsletterApp', {
   schedulePublish: date => ipcRenderer.invoke('newsletter:schedule-publish', date),
   saveFile: file => ipcRenderer.invoke('newsletter:save-file', file),
   openExternal: url => ipcRenderer.invoke('app:open-external', url),
+  diagnostics: () => ipcRenderer.invoke('newsletter:diagnostics'),
 
   discovery: {
     state: () => ipcRenderer.invoke('discover:state'),
@@ -29,6 +30,8 @@ contextBridge.exposeInMainWorld('newsletterApp', {
     addSource: entry => ipcRenderer.invoke('discover:source-add', entry),
     updateSource: (id, patch) => ipcRenderer.invoke('discover:source-update', id, patch),
     removeSource: id => ipcRenderer.invoke('discover:source-remove', id),
+    testSource: id => ipcRenderer.invoke('discover:source-test', id),
+    resetSources: () => ipcRenderer.invoke('discover:sources-reset'),
     setFindingStatus: (ids, status) => ipcRenderer.invoke('discover:finding-status', ids, status),
     onProgress: callback => subscribe('discover:progress', callback),
     onFinished: callback => subscribe('discover:finished', callback)

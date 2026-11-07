@@ -88,6 +88,26 @@ const assert = require('node:assert');
   assert.strictEqual(settings.monitor.enabled, true, 'המעקב נשמר');
   console.log('MONITOR INFO:', await page.evaluate(() => document.getElementById('monitorInfo').textContent));
 
+  // תצוגת המקורות: רשימה מלאה, בדיקה של מקור אחד, השהיה, והוספה דרך הטופס הגדול
+  await page.click('#navSources');
+  await page.waitForSelector('#viewSources:not([hidden])');
+  await page.waitForTimeout(400);
+  const rows = await page.evaluate(() => ({ rows: document.querySelectorAll('.source-row').length, count: document.getElementById('sourcesCount').textContent }));
+  console.log('SOURCES VIEW', JSON.stringify(rows));
+  assert.ok(rows.rows >= 7, 'שורות המקורות מוצגות');
+  await page.click('.source-row:nth-child(2) .mini-button:first-child');
+  await page.waitForFunction(() => document.querySelector('.source-row:nth-child(2) .mini-button:first-child').textContent === 'בדיקה', null, { timeout: 60000 });
+  console.log('TEST SOURCE:', await page.evaluate(() => document.querySelector('.source-row:nth-child(2) .source-row-status').textContent));
+  await page.click('.source-row:nth-child(1) .switch');
+  await page.waitForTimeout(400);
+  assert.ok(await page.evaluate(() => document.querySelector('.source-row:nth-child(1)').classList.contains('disabled')), 'השהיית מקור');
+  await page.fill('#sourceUrlFull', 'https://www.kolzchut.org.il/he/%D7%97%D7%99%D7%A0%D7%95%D7%9A_%D7%9E%D7%99%D7%95%D7%97%D7%93');
+  await page.fill('#sourceNameFull', 'כל זכות · חינוך מיוחד');
+  await page.click('#sourceAddFullButton');
+  await page.waitForFunction(() => document.querySelectorAll('.source-row').length === 11, null, { timeout: 60000 });
+  await page.screenshot({ path: path.join(__dirname, 'smoke-sources.png'), fullPage: true });
+  console.log('SOURCE ADDED, rows:', await page.evaluate(() => document.querySelectorAll('.source-row').length));
+
   // חזרה לגיליונות: צפייה בלבד, ואז בדיקה שפס הפרסום לא מופיע בלי הרשאה
   await page.click('.side-link[data-view="issues"]');
   await page.click('#viewOnlyButton');

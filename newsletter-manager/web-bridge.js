@@ -43,7 +43,8 @@
     // מנוע העדכונים (מעקב, התראות, ניסוח AI) רץ רק בדסקטופ; דף הווב מציג את ניהול הגיליונות בלבד.
     features: { discovery: false, desktop: false },
     openExternal(url) { window.open(url, '_blank', 'noopener'); return Promise.resolve(); },
-    discovery: { state: desktopOnly, run: desktopOnly, addSource: desktopOnly, updateSource: desktopOnly, removeSource: desktopOnly, setFindingStatus: desktopOnly, onProgress: noop, onFinished: noop },
+    diagnostics() { return call('diagnostics'); },
+    discovery: { state: desktopOnly, run: desktopOnly, addSource: desktopOnly, updateSource: desktopOnly, removeSource: desktopOnly, testSource: desktopOnly, resetSources: desktopOnly, setFindingStatus: desktopOnly, onProgress: noop, onFinished: noop },
     settings: { get: desktopOnly, set: desktopOnly, onChanged: noop },
     ai: { status: desktopOnly, setKey: desktopOnly, testKey: desktopOnly },
     draft: { generate: desktopOnly, onProgress: noop },

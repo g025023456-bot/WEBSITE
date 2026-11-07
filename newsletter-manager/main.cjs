@@ -450,6 +450,9 @@ app.whenReady().then(async () => {
   ipcMain.handle('discover:source-add', async (_event, entry) => discovery.addSource(entry));
   ipcMain.handle('discover:source-update', (_event, id, patch) => discovery.updateSource(id, patch || {}));
   ipcMain.handle('discover:source-remove', (_event, id) => discovery.removeSource(id));
+  ipcMain.handle('discover:source-test', (_event, id) => discovery.testSource(id));
+  ipcMain.handle('discover:sources-reset', () => discovery.resetSources());
+  ipcMain.handle('newsletter:diagnostics', () => callApi('diagnostics', {}));
   ipcMain.handle('discover:finding-status', (_event, ids, status) => discovery.setFindingStatus(ids, status));
 
   /* settings + AI */

@@ -27,9 +27,11 @@
       <div class="side-label">ניהול האתר</div>
       <button type="button" class="side-link active" data-view="issues"><span class="side-icon">▤</span> גיליונות</button>
       <button type="button" class="side-link" data-view="updates" id="navUpdates" hidden><span class="side-icon">◎</span> עדכונים מהרשת <span id="updatesBadge" class="side-badge" hidden>0</span></button>
+      <button type="button" class="side-link" data-view="sources" id="navSources" hidden><span class="side-icon">⚙</span> מקורות למעקב</button>
       <div class="sidebar-bottom">
         <div class="side-label">חיבור לאתר החי</div>
         <div id="connectionLabel" class="folder-label">לא מחובר</div>
+        <div id="diagLabel" class="diag-label" hidden></div>
         <button id="logoutButton" class="button button-outline button-wide" hidden>התנתקות</button>
         <p class="side-hint">פרסום מעלה את השינויים לאתר תוך דקה-שתיים.</p>
       </div>
@@ -229,6 +231,7 @@
           <aside class="panel sources-panel">
             <div class="panel-heading">
               <div><h2>המקורות במעקב</h2><p>אתרים ו-RSS שנבדקים בכל סריקה</p></div>
+              <button type="button" id="manageSourcesButton" class="mini-button">ניהול המקורות ←</button>
             </div>
             <div id="sourcesList" class="sources-list"></div>
             <form id="sourceForm" class="source-form">
@@ -242,12 +245,40 @@
           </aside>
         </section>
 
-        <div id="draftBar" class="draft-bar" hidden>
-          <div class="draft-bar-text"><strong id="draftCount">נבחרו 0 עדכונים</strong><small>ה-AI יקרא את המקורות, יכתוב גיליון לפי כללי התוכן, ויעצב אותו על התבנית של הגיליונות שפורסמו</small></div>
-          <input id="draftInstructions" type="text" placeholder="הנחיות לכותב (רשות): דגש, קהל, נושא..." maxlength="300">
-          <button id="draftButton" class="button button-primary button-big">✨ ניסוח גיליון עם AI</button>
-        </div>
       </section>
+
+      <!-- ===== תצוגת המקורות למעקב (דסקטופ) ===== -->
+      <section id="viewSources" class="view" hidden>
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">מנוע העדכונים</div>
+            <h1>מקורות למעקב</h1>
+            <p class="top-subtitle">האתרים וערוצי ה-RSS שנבדקים בכל חיפוש ובמעקב האוטומטי. אפשר להוסיף כל דף חדשות או RSS, להשהות, לבדוק ולהסיר</p>
+          </div>
+          <div class="topbar-actions">
+            <button id="sourcesResetButton" class="button button-outline">שחזור רשימת ברירת המחדל</button>
+            <button id="sourcesScanButton" class="button button-primary">🔍 בדיקת כל המקורות עכשיו</button>
+          </div>
+        </header>
+        <section class="panel sources-full-panel">
+          <form id="sourceFormFull" class="source-form-inline">
+            <input id="sourceNameFull" type="text" placeholder="שם המקור (למשל: משרד הרווחה · חדשות)" maxlength="80">
+            <input id="sourceUrlFull" type="url" dir="ltr" placeholder="https://...  כתובת של דף חדשות או של RSS" required>
+            <button type="submit" id="sourceAddFullButton" class="button button-primary">＋ הוספה ובדיקה</button>
+          </form>
+          <div id="sourceErrorFull" class="form-error" role="alert"></div>
+          <div class="sources-table-head"><span id="sourcesCount">0 מקורות</span><span>מקור מושהה נשאר ברשימה אבל לא נבדק</span></div>
+          <div id="sourcesTable" class="sources-table"></div>
+          <div class="archive-note"><span>ⓘ</span><span>דפים ממשלתיים ב-gov.il נטענים בסקריפט ולא ניתנים לקריאה ישירה, ולכן לא ניתן להוסיף אותם כאן. הם מכוסים בחיפוש ה-AI ברשת שרץ בכל "חיפוש עדכונים חדשים" (כשמוגדר מפתח AI).</span></div>
+        </section>
+      </section>
+
+      <!-- פס הניסוח: מופיע בתצוגת העדכונים כשנבחרו ממצאים -->
+      <div id="draftBar" class="draft-bar" hidden>
+        <div class="draft-bar-text"><strong id="draftCount">נבחרו 0 עדכונים</strong><small>ה-AI יקרא את המקורות, יכתוב גיליון לפי כללי התוכן, ויעצב אותו על התבנית של הגיליונות שפורסמו</small></div>
+        <input id="draftInstructions" type="text" placeholder="הנחיות לכותב (רשות): דגש, קהל, נושא..." maxlength="300">
+        <button id="draftButton" class="button button-primary button-big">✨ ניסוח גיליון עם AI</button>
+      </div>
     </main>
   </div>
 

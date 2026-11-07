@@ -312,6 +312,36 @@ class Discovery {
     await this.writeJson('seen.json', seen);
   }
 
+  // בדיקה מיידית של מקור אחד (בלי לסמן פריטים כנראו): מעדכן את סטטוס המקור ומחזיר דוגמה.
+  async testSource(id) {
+    const sources = await this.getSources();
+    const source = sources.find(item => item.id === id);
+    if (!source) throw new Error('המקור לא נמצא.');
+    const now = new Date().toISOString();
+    try {
+      const { kind, items } = await fetchSource(source);
+      source.kind = kind;
+      source.lastCheck = now;
+      source.lastResult = { ok: true, count: items.length, newCount: 0, probe: true };
+      await this.saveSources(sources);
+      return { ok: true, kind, count: items.length, sample: items.slice(0, 3).map(item => item.title), sources };
+    } catch (error) {
+      source.lastCheck = now;
+      source.lastResult = { ok: false, error: error.message };
+      await this.saveSources(sources);
+      return { ok: false, error: error.message, sources };
+    }
+  }
+
+  // משחזר את רשימת ברירת המחדל ומשאיר את המקורות שהמשתמש הוסיף.
+  async resetSources() {
+    const current = await this.getSources();
+    const custom = current.filter(source => String(source.id).startsWith('src-'));
+    const restored = [...DEFAULT_SOURCES.map(source => ({ ...source })), ...custom];
+    await this.saveSources(restored);
+    return restored;
+  }
+
   async getFindings() {
     const findings = await this.readJson('findings.json', []);
     return Array.isArray(findings) ? findings : [];

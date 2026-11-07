@@ -76,7 +76,20 @@ const elements = {
   discardButton: $('discardButton'),
   viewIssues: $('viewIssues'),
   viewUpdates: $('viewUpdates'),
+  viewSources: $('viewSources'),
   navUpdates: $('navUpdates'),
+  navSources: $('navSources'),
+  diagLabel: $('diagLabel'),
+  manageSourcesButton: $('manageSourcesButton'),
+  sourcesResetButton: $('sourcesResetButton'),
+  sourcesScanButton: $('sourcesScanButton'),
+  sourceFormFull: $('sourceFormFull'),
+  sourceNameFull: $('sourceNameFull'),
+  sourceUrlFull: $('sourceUrlFull'),
+  sourceErrorFull: $('sourceErrorFull'),
+  sourceAddFullButton: $('sourceAddFullButton'),
+  sourcesTable: $('sourcesTable'),
+  sourcesCount: $('sourcesCount'),
   updatesBadge: $('updatesBadge'),
   scanButton: $('scanButton'),
   scanStatus: $('scanStatus'),
@@ -224,13 +237,44 @@ function renderPreview(issue) {
 /* ---------- views ---------- */
 
 function setView(view) {
-  if (view === 'updates' && !(window.newsletterApp && window.newsletterApp.features && window.newsletterApp.features.discovery)) return;
+  const hasDiscovery = Boolean(window.newsletterApp && window.newsletterApp.features && window.newsletterApp.features.discovery);
+  if (view !== 'issues' && !hasDiscovery) return;
   state.view = view;
   elements.viewIssues.hidden = view !== 'issues';
   elements.viewUpdates.hidden = view !== 'updates';
+  elements.viewSources.hidden = view !== 'sources';
   document.querySelectorAll('.side-link[data-view]').forEach(link => link.classList.toggle('active', link.dataset.view === view));
-  if (view === 'updates' && !state.updates.loaded) loadUpdates();
+  if (view !== 'issues' && !state.updates.loaded) loadUpdates();
   updateBars();
+}
+
+/* ---------- diagnostics: GitHub token + AI key on the server ---------- */
+
+async function runDiagnostics() {
+  if (!state.canWrite || !window.newsletterApp.diagnostics) return;
+  let result;
+  try {
+    result = await window.newsletterApp.diagnostics();
+  } catch (error) {
+    // שרת ישן בלי פעולת האבחון, או ניתוק רגעי: לא מציגים כלום.
+    elements.diagLabel.hidden = true;
+    return;
+  }
+  const rows = [];
+  if (result.github && result.github.ok && result.github.push) {
+    rows.push('<div class="row ok"><span class="state-dot"></span>GitHub: מפתח תקין עם הרשאת כתיבה</div>');
+  } else if (result.github && result.github.ok) {
+    rows.push('<div class="row warn"><span class="state-dot"></span>GitHub: המפתח נקרא, אבל נראה שאין לו הרשאת כתיבה (Contents: Read and write). פרסום עלול להיכשל.</div>');
+    showToast('מפתח ה-GitHub ב-Vercel נראה ללא הרשאת כתיבה. בדקו שלאסימון יש Contents: Read and write על מאגר האתר.', true);
+  } else {
+    rows.push(`<div class="row warn"><span class="state-dot"></span>GitHub: ${escapeHtml(result.github ? result.github.error : 'לא נבדק')}</div>`);
+    showToast(`בעיה במפתח ה-GitHub ב-Vercel: ${result.github ? result.github.error : ''}`, true);
+  }
+  rows.push(result.ai && result.ai.configured
+    ? '<div class="row ok"><span class="state-dot"></span>מפתח AI מוגדר באתר (Vercel)</div>'
+    : '<div class="row"><span class="state-dot"></span>מפתח AI לא מוגדר באתר (ANTHROPIC_API_KEY)</div>');
+  elements.diagLabel.innerHTML = rows.join('');
+  elements.diagLabel.hidden = false;
 }
 
 document.querySelectorAll('.side-link[data-view]').forEach(link => {
@@ -342,6 +386,7 @@ function render() {
   elements.connectionLabel.textContent = state.connected
     ? (state.email ? `${state.email}${state.canWrite ? '' : ' · צפייה בלבד'}` : 'צפייה בלבד, ללא התחברות')
     : 'לא מחובר';
+  if (!state.connected || !state.canWrite) elements.diagLabel.hidden = true;
   elements.addButton.disabled = !state.canWrite;
   elements.issueCount.textContent = String(issues.length);
   const firstKept = issues.find(issue => !state.deletedDates.has(issue.sourceDate));
@@ -983,6 +1028,8 @@ async function loadData(data) {
     setLoading(false);
   }
   if (state.issues[0]) selectIssue(state.issues[0]);
+  elements.diagLabel.hidden = true;
+  if (state.canWrite) runDiagnostics();
   const due = (state.scheduled || []).filter(entry => entry.date <= todayIso());
   if (due.length && state.canWrite) {
     showToast(`יש ${due.length === 1 ? 'גיליון עתידי שהגיע מועדו' : due.length + ' גיליונות עתידיים שהגיע מועדם'}. פרסמו אותו מהרשימה למעלה.`);
@@ -1320,6 +1367,7 @@ function renderUpdates() {
   }
   renderFindings();
   renderSources();
+  renderSourcesFull();
   const newCount = u.findings.filter(finding => finding.status === 'new' && finding.relevance >= 7).length;
   elements.updatesBadge.hidden = newCount === 0;
   elements.updatesBadge.textContent = String(newCount);
@@ -1475,23 +1523,148 @@ function renderSources() {
   }
 }
 
-elements.sourceForm.addEventListener('submit', async event => {
+function bindSourceForm(form, nameInput, urlInput, errorBox, button) {
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    errorBox.textContent = '';
+    button.disabled = true;
+    button.textContent = 'בודק את המקור...';
+    try {
+      const result = await discoveryApi().addSource({ name: nameInput.value, url: urlInput.value });
+      state.updates.sources = result.sources;
+      nameInput.value = '';
+      urlInput.value = '';
+      renderSources();
+      renderSourcesFull();
+      showToast(`המקור נוסף (${result.kind === 'rss' ? 'RSS' : 'דף אינטרנט'}, נקראו ${result.probeCount} פריטים). הוא ייכלל בסריקה הבאה.`);
+    } catch (error) {
+      errorBox.textContent = cleanError(error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = '＋ הוספה ובדיקה';
+    }
+  });
+}
+bindSourceForm(elements.sourceForm, elements.sourceName, elements.sourceUrl, elements.sourceError, elements.sourceAddButton);
+bindSourceForm(elements.sourceFormFull, elements.sourceNameFull, elements.sourceUrlFull, elements.sourceErrorFull, elements.sourceAddFullButton);
+
+/* ---------- sources view (full management) ---------- */
+
+function sourceStatus(source) {
+  if (source.lastResult && source.lastResult.ok === false) return { text: `לא נענה: ${source.lastResult.error}`, cls: 'error' };
+  if (source.lastResult && source.lastCheck) {
+    const base = `נבדק ${relativeTime(source.lastCheck)} · ${source.lastResult.count} פריטים`;
+    if (source.lastResult.probe || source.lastResult.firstRun) return { text: base, cls: 'ok' };
+    return { text: `${base} · ${source.lastResult.newCount} חדשים`, cls: 'ok' };
+  }
+  return { text: 'טרם נבדק', cls: '' };
+}
+
+function renderSourcesFull() {
+  const u = state.updates;
+  elements.sourcesTable.replaceChildren();
+  const active = u.sources.filter(source => source.enabled).length;
+  elements.sourcesCount.textContent = `${u.sources.length} מקורות · ${active} פעילים`;
+  for (const source of u.sources) {
+    const row = document.createElement('div');
+    row.className = `source-row${source.enabled ? '' : ' disabled'}`;
+
+    const toggle = document.createElement('label');
+    toggle.className = 'switch-row';
+    toggle.title = source.enabled ? 'פעיל · לחיצה משהה' : 'מושהה · לחיצה מפעילה';
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = Boolean(source.enabled);
+    check.setAttribute('aria-label', `הפעלת המקור ${source.name}`);
+    check.addEventListener('change', async () => {
+      try {
+        u.sources = await discoveryApi().updateSource(source.id, { enabled: check.checked });
+        renderUpdates();
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    });
+    const knob = document.createElement('span');
+    knob.className = 'switch';
+    toggle.append(check, knob);
+
+    const main = document.createElement('div');
+    main.className = 'source-row-main';
+    main.innerHTML = `<div class="source-row-name"><span>${escapeHtml(source.name)}</span><span class="kind-chip">${source.kind === 'rss' ? 'RSS' : 'דף אינטרנט'}</span></div><span class="source-row-url"><a href="${escapeHtml(source.url)}" data-external>${escapeHtml(source.url)}</a></span>`;
+
+    const status = sourceStatus(source);
+    const statusBox = document.createElement('div');
+    statusBox.className = `source-row-status ${status.cls}`;
+    statusBox.textContent = status.text;
+
+    const actions = document.createElement('div');
+    actions.className = 'source-row-actions';
+    const test = document.createElement('button');
+    test.type = 'button';
+    test.className = 'mini-button';
+    test.textContent = 'בדיקה';
+    test.addEventListener('click', async () => {
+      test.disabled = true;
+      test.textContent = 'בודק...';
+      try {
+        const result = await discoveryApi().testSource(source.id);
+        u.sources = result.sources;
+        renderUpdates();
+        if (result.ok) showToast(`${source.name}: נקראו ${result.count} פריטים${result.sample.length ? `. לדוגמה: ${result.sample[0]}` : ''}`);
+        else showToast(`${source.name}: ${result.error}`, true);
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    });
+    const rename = document.createElement('button');
+    rename.type = 'button';
+    rename.className = 'mini-button';
+    rename.textContent = 'שינוי שם';
+    rename.addEventListener('click', async () => {
+      const name = window.prompt('שם חדש למקור:', source.name);
+      if (!name || !name.trim() || name.trim() === source.name) return;
+      try {
+        u.sources = await discoveryApi().updateSource(source.id, { name: name.trim() });
+        renderUpdates();
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'mini-button danger';
+    remove.textContent = 'הסרה';
+    remove.addEventListener('click', async () => {
+      if (!window.confirm(`להסיר את המקור "${source.name}" מהמעקב?`)) return;
+      try {
+        u.sources = await discoveryApi().removeSource(source.id);
+        renderUpdates();
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    });
+    actions.append(test, rename, remove);
+    row.append(toggle, main, statusBox, actions);
+    elements.sourcesTable.append(row);
+  }
+}
+
+elements.sourcesTable.addEventListener('click', event => {
+  const link = event.target.closest('a[data-external]');
+  if (!link) return;
   event.preventDefault();
-  elements.sourceError.textContent = '';
-  elements.sourceAddButton.disabled = true;
-  elements.sourceAddButton.textContent = 'בודק את המקור...';
+  window.newsletterApp.openExternal(link.getAttribute('href'));
+});
+elements.manageSourcesButton.addEventListener('click', () => setView('sources'));
+elements.sourcesScanButton.addEventListener('click', () => { setView('updates'); runScan(); });
+elements.sourcesResetButton.addEventListener('click', async () => {
+  if (!window.confirm('לשחזר את רשימת ברירת המחדל? מקורות שהוספתם בעצמכם יישארו, והמקורות המובנים יחזרו למצבם ההתחלתי.')) return;
   try {
-    const result = await discoveryApi().addSource({ name: elements.sourceName.value, url: elements.sourceUrl.value });
-    state.updates.sources = result.sources;
-    elements.sourceName.value = '';
-    elements.sourceUrl.value = '';
-    renderSources();
-    showToast(`המקור נוסף (${result.kind === 'rss' ? 'RSS' : 'דף אינטרנט'}, נקראו ${result.probeCount} פריטים). הוא ייכלל בסריקה הבאה.`);
+    state.updates.sources = await discoveryApi().resetSources();
+    renderUpdates();
+    showToast('רשימת המקורות שוחזרה.');
   } catch (error) {
-    elements.sourceError.textContent = cleanError(error.message);
-  } finally {
-    elements.sourceAddButton.disabled = false;
-    elements.sourceAddButton.textContent = '＋ הוספה ובדיקה';
+    showToast(error.message, true);
   }
 });
 
@@ -1758,6 +1931,7 @@ async function startup() {
   const features = window.newsletterApp.features || {};
   if (features.discovery) {
     elements.navUpdates.hidden = false;
+    elements.navSources.hidden = false;
     window.newsletterApp.onNavigate(view => setView(view));
     window.newsletterApp.onRunDiscovery(() => { setView('updates'); runScan(); });
     window.newsletterApp.discovery.onFinished(event => {

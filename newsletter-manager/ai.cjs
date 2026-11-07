@@ -202,17 +202,21 @@ class AiService {
   }
 
   // { key, source: 'local' | 'server' | null }
+  // מפתח מהשרת נשמר בזיכרון; תשובה ריקה (עדיין לא הוגדר, או לא מחוברים) נבדקת שוב אחרי דקה,
+  // כך שהגדרה חדשה ב-Vercel נקלטת בלי להפעיל מחדש את האפליקציה.
   async resolveKey() {
     const local = await this.readLocalKey();
     if (local) return { key: local, source: 'local' };
-    if (this.serverKeyCache === undefined && this.getServerKey) {
+    const stale = !this.serverKeyCheckedAt || Date.now() - this.serverKeyCheckedAt > 60 * 1000;
+    if (this.getServerKey && (!this.serverKeyCache || stale)) {
       try { this.serverKeyCache = (await this.getServerKey()) || null; } catch (error) { this.serverKeyCache = null; }
+      this.serverKeyCheckedAt = Date.now();
     }
     if (this.serverKeyCache) return { key: this.serverKeyCache, source: 'server' };
     return { key: null, source: null };
   }
 
-  forgetServerKey() { this.serverKeyCache = undefined; }
+  forgetServerKey() { this.serverKeyCache = undefined; this.serverKeyCheckedAt = 0; }
 
   async status() {
     const { source } = await this.resolveKey();

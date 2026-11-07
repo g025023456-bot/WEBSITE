@@ -390,6 +390,27 @@ async function actionSchedulePublish(date, userEmail) {
   return { ok: true };
 }
 
+// מפתח ה-AI: מקבלים כל אחד מהשמות הנפוצים, כדי שהגדרה ב-Vercel לא תיכשל בגלל שם משתנה.
+function aiKeyFromEnv() {
+  for (const name of ['ANTHROPIC_API_KEY', 'CLAUDE_API_KEY', 'ANTHROPIC_KEY', 'CLAUDE_KEY']) {
+    if (process.env[name] && process.env[name].trim()) return { key: process.env[name].trim(), name };
+  }
+  return { key: null, name: null };
+}
+
+// אבחון: האם מפתח ה-GitHub תקין ויש לו הרשאת כתיבה למאגר, והאם מוגדר מפתח AI.
+async function actionDiagnostics() {
+  const result = { ok: true, repo: REPO, github: null, ai: { configured: Boolean(aiKeyFromEnv().key), name: aiKeyFromEnv().name } };
+  try {
+    const info = await gh('GET', `/repos/${REPO}`);
+    const push = Boolean(info.permissions && info.permissions.push);
+    result.github = { ok: true, push, branch: info.default_branch || 'main' };
+  } catch (error) {
+    result.github = { ok: false, error: error.message };
+  }
+  return result;
+}
+
 /* ---------- handler ---------- */
 
 module.exports = async (req, res) => {
@@ -407,7 +428,8 @@ module.exports = async (req, res) => {
     switch (action) {
       case 'ping': result = { ok: true, email }; break;
       // מפתח ה-AI לאפליקציית הדסקטופ (ANTHROPIC_API_KEY בהגדרות Vercel), למשתמש מחובר בלבד.
-      case 'aiKey': result = { ok: true, key: process.env.ANTHROPIC_API_KEY || null }; break;
+      case 'aiKey': result = { ok: true, key: aiKeyFromEnv().key }; break;
+      case 'diagnostics': result = await actionDiagnostics(); break;
       case 'load': result = await actionLoad(); break;
       case 'readIssue': result = await actionReadIssue(payload); break;
       case 'save': result = await actionSave(payload, email); break;
