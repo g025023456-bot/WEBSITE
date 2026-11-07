@@ -634,6 +634,19 @@ return { renderIssue, contentProblems, escapeHtml, prettyDate };
     return localStorage.getItem('newsletter-email') || null;
   }
 
+  // קריאת מקור דרך השרת. אתרים שחוסמים כתובות של חוות שרתים (למשל כל זכות עם Cloudflare)
+  // נכשלים כאן אבל נקראים בלי בעיה באפליקציית הדסקטופ, שמגיעה מהמחשב של המשתמש.
+  async function fetchSourceViaServer(url) {
+    try {
+      return await call('fetchSource', { url });
+    } catch (error) {
+      if (/חוסם|Cloudflare|דחה את הבקשה|לא ענה בזמן/.test(error.message)) {
+        throw new Error(`${error.message} החסימה היא כלפי שרת האתר; באפליקציית הדסקטופ המקור נקרא מהמחשב שלכם ועובד.`);
+      }
+      throw error;
+    }
+  }
+
   async function call(action, payload, authOverride) {
     const auth = authOverride || savedAuth();
     const headers = { 'Content-Type': 'application/json' };
@@ -852,7 +865,7 @@ return { renderIssue, contentProblems, escapeHtml, prettyDate };
         const seenMap = seen[source.id] || {};
         const now = new Date().toISOString();
         try {
-          const { kind, items } = await call('fetchSource', { url: source.url });
+          const { kind, items } = await fetchSourceViaServer(source.url);
           const fresh = items.filter(item => !seenMap[itemKey(item.link)]);
           const picked = firstRun ? items.slice(0, dcore.FIRST_RUN_CANDIDATES) : fresh;
           for (const item of items) {
@@ -988,7 +1001,7 @@ return { renderIssue, contentProblems, escapeHtml, prettyDate };
         if (!/^https?:\/\/[^\s]+$/i.test(cleanUrl)) throw new Error('הכתובת צריכה להתחיל ב-https:// ולהיות כתובת של דף או של RSS.');
         const sources = getSources();
         if (sources.some(source => dcore.normalizeLink(source.url) === dcore.normalizeLink(cleanUrl))) throw new Error('המקור הזה כבר ברשימה.');
-        const probe = await call('fetchSource', { url: cleanUrl });
+        const probe = await fetchSourceViaServer(cleanUrl);
         sources.push({ id: randomId('src'), name: cleanName, url: cleanUrl, enabled: true, kind: probe.kind, lastCheck: null, lastResult: { ok: true, count: probe.items.length, newCount: 0, probe: true } });
         store.set('sources', sources);
         return { sources, probeCount: probe.items.length, kind: probe.kind };
@@ -1016,7 +1029,7 @@ return { renderIssue, contentProblems, escapeHtml, prettyDate };
         if (!source) throw new Error('המקור לא נמצא.');
         const now = new Date().toISOString();
         try {
-          const { kind, items } = await call('fetchSource', { url: source.url });
+          const { kind, items } = await fetchSourceViaServer(source.url);
           source.kind = kind;
           source.lastCheck = now;
           source.lastResult = { ok: true, count: items.length, newCount: 0, probe: true };
@@ -3159,6 +3172,7 @@ async function startup() {
       $('monitorWebNote').hidden = false;
       $('settingsMonitorSection').hidden = true;
       $('settingsWindowsSection').hidden = true;
+      $('sourcesWebNote').hidden = false;
     }
     if (!features.localKey) {
       $('aiKeyRow').hidden = true;

@@ -68,8 +68,12 @@ async function fetchText(url) {
   }
   let text;
   try { text = new TextDecoder(charset).decode(buffer); } catch (error) { text = buffer.toString('utf8'); }
-  if (/<title>Just a moment\.\.\.<\/title>|cf-chl|challenge-platform/i.test(text.slice(0, 4000))) {
+  if (/<title>Just a moment\.\.\.<\/title>|Attention Required! \| Cloudflare|cf-chl|cf_chl_opt|challenge-platform|challenges\.cloudflare\.com|cf-browser-verification|cf-mitigated/i.test(text.slice(0, 6000))
+    || response.status === 403 && /cloudflare/i.test(text.slice(0, 6000))) {
     throw new Error('האתר חוסם גישה אוטומטית (בדיקת Cloudflare). נסו שוב מאוחר יותר.');
+  }
+  if (response.status === 418 || response.status === 429) {
+    throw new Error(`האתר דחה את הבקשה (${response.status}). נסו שוב בעוד כמה דקות.`);
   }
   // חלק מהאתרים מחזירים דף אמיתי עם קוד 404 (למשל כל זכות). דף קצר הוא שגיאה אמיתית.
   if (!response.ok && text.length < 5000) throw new Error(`האתר החזיר שגיאה ${response.status}.`);

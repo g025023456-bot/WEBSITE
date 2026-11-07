@@ -1944,6 +1944,7 @@ async function startup() {
       $('monitorWebNote').hidden = false;
       $('settingsMonitorSection').hidden = true;
       $('settingsWindowsSection').hidden = true;
+      $('sourcesWebNote').hidden = false;
     }
     if (!features.localKey) {
       $('aiKeyRow').hidden = true;
