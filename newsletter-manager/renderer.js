@@ -19,6 +19,7 @@ const state = {
   view: 'issues',
   draftMeta: null,     // פרטי טיוטת AI שנפתחה בעורך הגיליון
   pendingDraft: null,  // תוצאת ניסוח שעוד לא נפתחה
+  drafts: [],          // טיוטות שמורות (מקומי)
   updates: { loaded: false, sources: [], findings: [], status: {}, settings: null, ai: null, selected: new Set(), filter: 'new', scanning: false }
 };
 
@@ -116,6 +117,27 @@ const elements = {
   draftResult: $('draftResult'),
   draftCloseButton: $('draftCloseButton'),
   draftOpenButton: $('draftOpenButton'),
+  draftRetryButton: $('draftRetryButton'),
+  draftSavedNote: $('draftSavedNote'),
+  draftsPanel: $('draftsPanel'),
+  draftsList: $('draftsList'),
+  draftsCaption: $('draftsCaption'),
+  draftsBadge: $('draftsBadge'),
+  reviewBanner: $('reviewBanner'),
+  reviewText: $('reviewText'),
+  reviewNotes: $('reviewNotes'),
+  reviewNotesList: $('reviewNotesList'),
+  fullPreviewButton: $('fullPreviewButton'),
+  openPreviewButton: $('openPreviewButton'),
+  previewBackdrop: $('previewBackdrop'),
+  fullPreviewFrame: $('fullPreviewFrame'),
+  fullPreviewDevice: $('fullPreviewDevice'),
+  fullPreviewCaption: $('fullPreviewCaption'),
+  emptyScanButton: $('emptyScanButton'),
+  aiConnState: $('aiConnState'),
+  aiKeyDetails: $('aiKeyDetails'),
+  shortcutButton: $('shortcutButton'),
+  shortcutStatus: $('shortcutStatus'),
   settingsBackdrop: $('settingsBackdrop'),
   settingsError: $('settingsError'),
   aiKeyInput: $('aiKeyInput'),
@@ -226,12 +248,166 @@ function renderPreview(issue) {
     elements.previewFrame.hidden = true;
     elements.previewEmpty.hidden = false;
     elements.previewCaption.textContent = 'לא ניתן לטעון תצוגה לגיליון זה';
+    elements.reviewBanner.hidden = true;
     return;
   }
   elements.previewFrame.hidden = false;
   elements.previewEmpty.hidden = true;
   elements.previewFrame.srcdoc = getPreviewHtml(content);
   elements.previewCaption.textContent = `גיליון ${issue.n} · ${prettyDate(issue.date)}`;
+  renderReviewBanner(issue);
+}
+
+// "איפה אני": גיליון שעדיין לא באתר (חדש או עם טקסט ערוך) מקבל פס הכוונה מעל התצוגה.
+function renderReviewBanner(issue) {
+  const unpublished = !issue.sourceDate;
+  const edited = Boolean(issue.sourceDate && state.editedFiles.has(issue.sourceDate));
+  elements.reviewBanner.hidden = !(unpublished || edited);
+  if (elements.reviewBanner.hidden) return;
+  elements.reviewText.textContent = unpublished
+    ? 'הגיליון הזה עדיין לא באתר. בדקו את התצוגה (גם בנייד), ערכו אם צריך, ואז "פרסום לאתר".'
+    : 'הטקסט הערוך עדיין לא באתר. כך הוא ייראה אחרי הפרסום. אפשר לשחזר את המקור מהרשימה.';
+  const draft = issue.draftId ? state.drafts.find(item => item.id === issue.draftId) : null;
+  const notes = draft && draft.notes ? draft.notes : [];
+  elements.reviewNotes.hidden = !notes.length;
+  elements.reviewNotesList.replaceChildren(...notes.map(note => {
+    const item = document.createElement('li');
+    item.textContent = note;
+    return item;
+  }));
+}
+
+/* ---------- full preview ---------- */
+
+function selectedIssueContent() {
+  const issue = state.issues.find(item => item.date === state.selectedDate);
+  return issue ? { issue, content: issueContent(issue) } : { issue: null, content: '' };
+}
+
+function openFullPreview() {
+  const { issue, content } = selectedIssueContent();
+  if (!content) return;
+  elements.fullPreviewCaption.textContent = `גיליון ${issue.n} · ${prettyDate(issue.date)}${issue.sourceDate ? '' : ' · טרם פורסם'}`;
+  elements.fullPreviewFrame.srcdoc = getPreviewHtml(content);
+  elements.previewBackdrop.hidden = false;
+}
+function setFullDevice(mobile) {
+  elements.fullPreviewDevice.classList.toggle('mobile', mobile);
+  $('fullDeviceMobile').classList.toggle('active', mobile);
+  $('fullDeviceDesktop').classList.toggle('active', !mobile);
+}
+elements.fullPreviewButton.addEventListener('click', openFullPreview);
+$('closePreviewButton').addEventListener('click', () => { elements.previewBackdrop.hidden = true; });
+elements.previewBackdrop.addEventListener('click', event => { if (event.target === elements.previewBackdrop) elements.previewBackdrop.hidden = true; });
+$('fullDeviceDesktop').addEventListener('click', () => setFullDevice(false));
+$('fullDeviceMobile').addEventListener('click', () => setFullDevice(true));
+elements.openPreviewButton.addEventListener('click', async () => {
+  const { content } = selectedIssueContent();
+  if (!content) return;
+  try { await window.newsletterApp.openPreview(content); } catch (error) { showToast(error.message, true); }
+});
+
+// Esc סוגר את החלון הפתוח (לא באמצע ניסוח).
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape') return;
+  if (!elements.previewBackdrop.hidden) elements.previewBackdrop.hidden = true;
+  else if (!elements.settingsBackdrop.hidden) { elements.settingsBackdrop.hidden = true; renderUpdates(); }
+  else if (!elements.draftBackdrop.hidden && !elements.draftCloseButton.hidden) elements.draftBackdrop.hidden = true;
+  else if (!elements.editorBackdrop.hidden) closeEditor();
+});
+
+/* ---------- drafts (saved locally, survive reloads) ---------- */
+
+async function loadDrafts() {
+  if (!window.newsletterApp.drafts) return;
+  try {
+    state.drafts = await window.newsletterApp.drafts.list();
+  } catch (error) {
+    state.drafts = [];
+  }
+  renderDrafts();
+}
+
+async function saveDraftRecord(draft) {
+  state.drafts = await window.newsletterApp.drafts.save(draft);
+  renderDrafts();
+  return state.drafts.find(item => item.id === draft.id);
+}
+
+async function setDraftStatus(id, status, patch = {}) {
+  if (!id) return;
+  const draft = state.drafts.find(item => item.id === id);
+  if (!draft || (draft.status === status && !Object.keys(patch).length)) return;
+  await saveDraftRecord({ ...draft, ...patch, status });
+}
+
+function draftStatusLabel(status) {
+  return { draft: 'ממתינה לבדיקה', added: 'ברשימה · לפרסום', published: 'פורסמה', scheduled: 'עתידית' }[status] || status;
+}
+
+function renderDrafts() {
+  const drafts = state.drafts || [];
+  const waiting = drafts.filter(draft => draft.status === 'draft');
+  elements.draftsBadge.hidden = waiting.length === 0;
+  elements.draftsBadge.textContent = String(waiting.length);
+  elements.draftsPanel.hidden = drafts.length === 0 || !state.connected;
+  elements.draftsCaption.textContent = waiting.length ? `${waiting.length} ממתינות לבדיקה` : 'כל הטיוטות טופלו';
+  elements.draftsList.replaceChildren();
+  const visible = [...drafts].sort((a, b) => (a.status === 'draft' ? 0 : a.status === 'added' ? 1 : 2) - (b.status === 'draft' ? 0 : b.status === 'added' ? 1 : 2) || String(b.updatedAt).localeCompare(String(a.updatedAt))).slice(0, 8);
+  for (const draft of visible) {
+    const item = document.createElement('div');
+    item.className = 'draft-item';
+    const main = document.createElement('div');
+    main.style.minWidth = '0';
+    main.innerHTML = `<div class="draft-meta"><span class="draft-status ${escapeHtml(draft.status)}">${draftStatusLabel(draft.status)}</span><span>נוצרה ${escapeHtml(relativeTime(draft.createdAt))}</span>${draft.findingTitles && draft.findingTitles.length ? `<span>מתוך: ${escapeHtml(draft.findingTitles.slice(0, 2).join(' · '))}</span>` : ''}</div><div class="draft-title">${escapeHtml(draft.title)}</div>`;
+    const actions = document.createElement('div');
+    actions.className = 'draft-actions';
+    const button = (label, handler, danger = false) => {
+      const element = document.createElement('button');
+      element.type = 'button';
+      element.className = `mini-button${danger ? ' danger' : ''}`;
+      element.textContent = label;
+      element.addEventListener('click', handler);
+      return element;
+    };
+    if (draft.status === 'draft' && state.canWrite) actions.append(button('לבדיקה ולפרסום', () => openDraftForReview(draft)));
+    if (draft.status === 'added') actions.append(button('הצגה', () => { const issue = state.issues.find(i => i.draftId === draft.id); if (issue) selectIssue(issue); }));
+    actions.append(button('תצוגה', () => previewDraft(draft)));
+    actions.append(button('הורדה', () => window.newsletterApp.saveFile({ name: `${draft.date}.html`, content: draft.html }).catch(error => showToast(error.message, true))));
+    if (draft.status !== 'added') actions.append(button('מחיקה', async () => {
+      if (!window.confirm(`למחוק את הטיוטה "${draft.title}"?`)) return;
+      state.drafts = await window.newsletterApp.drafts.remove(draft.id);
+      renderDrafts();
+    }, true));
+    item.append(main, actions);
+    elements.draftsList.append(item);
+  }
+}
+
+function previewDraft(draft) {
+  elements.previewFrame.hidden = false;
+  elements.previewEmpty.hidden = true;
+  elements.previewFrame.srcdoc = getPreviewHtml(draft.html);
+  elements.previewCaption.textContent = `טיוטה · ${draft.title}`;
+  elements.reviewBanner.hidden = false;
+  elements.reviewText.textContent = draft.status === 'draft' ? 'טיוטה שמורה. "לבדיקה ולפרסום" מוסיף אותה לרשימת הגיליונות.' : `טיוטה במצב: ${draftStatusLabel(draft.status)}.`;
+  elements.reviewNotes.hidden = !(draft.notes && draft.notes.length);
+  elements.reviewNotesList.replaceChildren(...(draft.notes || []).map(note => { const li = document.createElement('li'); li.textContent = note; return li; }));
+}
+
+function openDraftForReview(draft) {
+  if (!state.canWrite) {
+    showToast('להוספה לרשימה צריך להתחבר עם הרשאת ניהול.', true);
+    return;
+  }
+  setView('issues');
+  openEditor(null, {
+    date: draft.date,
+    title: draft.title,
+    sub: draft.sub,
+    html: draft.html,
+    aiDraft: { id: draft.id, n: draft.n, notes: draft.notes || [], problems: draft.problems || [] }
+  });
 }
 
 /* ---------- views ---------- */
@@ -260,19 +436,19 @@ async function runDiagnostics() {
     elements.diagLabel.hidden = true;
     return;
   }
+  // תקין = סימן אחד וזהו. רק בעיה מקבלת הסבר.
   const rows = [];
   if (result.github && result.github.ok && result.github.push) {
-    rows.push('<div class="row ok"><span class="state-dot"></span>GitHub: מפתח תקין עם הרשאת כתיבה</div>');
+    rows.push('<div class="row ok"><span class="state-dot"></span>✓ חיבור לאתר תקין</div>');
   } else if (result.github && result.github.ok) {
-    rows.push('<div class="row warn"><span class="state-dot"></span>GitHub: המפתח נקרא, אבל נראה שאין לו הרשאת כתיבה (Contents: Read and write). פרסום עלול להיכשל.</div>');
-    showToast('מפתח ה-GitHub ב-Vercel נראה ללא הרשאת כתיבה. בדקו שלאסימון יש Contents: Read and write על מאגר האתר.', true);
+    rows.push('<div class="row warn"><span class="state-dot"></span>אין הרשאת כתיבה לאתר. פרסום ייכשל.</div>');
+    showToast('לאסימון ה-GitHub ב-Vercel אין הרשאת כתיבה (צריך Contents: Read and write).', true);
   } else {
-    rows.push(`<div class="row warn"><span class="state-dot"></span>GitHub: ${escapeHtml(result.github ? result.github.error : 'לא נבדק')}</div>`);
-    showToast(`בעיה במפתח ה-GitHub ב-Vercel: ${result.github ? result.github.error : ''}`, true);
+    rows.push(`<div class="row warn"><span class="state-dot"></span>${escapeHtml(result.github ? result.github.error : 'החיבור לאתר לא נבדק')}</div>`);
   }
-  rows.push(result.ai && result.ai.configured
-    ? '<div class="row ok"><span class="state-dot"></span>מפתח AI מוגדר באתר (Vercel)</div>'
-    : '<div class="row"><span class="state-dot"></span>מפתח AI לא מוגדר באתר (ANTHROPIC_API_KEY)</div>');
+  if (result.ai && !result.ai.configured && !(window.newsletterApp.features || {}).localKey) {
+    rows.push('<div class="row warn"><span class="state-dot"></span>AI לא מוגדר באתר</div>');
+  }
   elements.diagLabel.innerHTML = rows.join('');
   elements.diagLabel.hidden = false;
 }
@@ -436,6 +612,15 @@ function render() {
       edit.addEventListener('click', () => openEditor(issue));
       actions.append(edit);
       if (issue.sourceDate) {
+        if (state.editedFiles.has(issue.sourceDate)) {
+          const revert = document.createElement('button');
+          revert.className = 'mini-button';
+          revert.type = 'button';
+          revert.textContent = 'שחזור המקור';
+          revert.title = 'ביטול עריכת הטקסט של הגיליון הזה בלבד';
+          revert.addEventListener('click', () => revertTextEdit(issue));
+          actions.append(revert);
+        }
         const remove = document.createElement('button');
         remove.className = 'mini-button danger';
         remove.type = 'button';
@@ -467,6 +652,9 @@ function updatePreviewButtons() {
   const issue = state.issues.find(item => item.date === state.selectedDate);
   const editable = state.canWrite && Boolean(issue) && !state.deletedDates.has(issue.sourceDate);
   const editing = Boolean(state.textEditing);
+  const hasContent = Boolean(issue) && Boolean(issueContent(issue));
+  elements.fullPreviewButton.disabled = !hasContent || editing;
+  elements.openPreviewButton.disabled = !hasContent || editing;
   elements.editButton.disabled = !editable;
   elements.editTextButton.disabled = !editable || !issueContent(issue);
   elements.editButton.hidden = editing;
@@ -503,17 +691,36 @@ function selectIssue(issue) {
   updatePreviewButtons();
 }
 
+function recomputeDirty() {
+  setDirty(state.issues.some(item => !item.sourceDate) || state.editedFiles.size > 0 || state.deletedDates.size > 0 || state.orderChanged === true);
+}
+
 function dropNewIssue(issue) {
   if (state.textEditing) {
     showToast('סיימו או בטלו קודם את עריכת הטקסט.', true);
     return;
   }
-  if (!window.confirm(`להסיר את הגיליון החדש "${issue.title}" מהרשימה? הוא עדיין לא פורסם, ולא יישמר.`)) return;
+  const hasDraft = Boolean(issue.draftId);
+  if (!window.confirm(`להסיר את "${issue.title}" מהרשימה?${hasDraft ? ' הטיוטה נשארת שמורה תחת "טיוטות".' : ' הגיליון לא פורסם ולא יישמר.'}`)) return;
   state.issues = state.issues.filter(item => item !== issue);
   state.pendingFiles.delete(issue.date);
-  const stillDirty = state.issues.some(item => !item.sourceDate) || state.editedFiles.size > 0 || state.deletedDates.size > 0;
-  setDirty(stillDirty);
+  if (hasDraft) setDraftStatus(issue.draftId, 'draft');
+  recomputeDirty();
   render();
+}
+
+function revertTextEdit(issue) {
+  if (state.textEditing) {
+    showToast('סיימו או בטלו קודם את עריכת הטקסט.', true);
+    return;
+  }
+  if (!window.confirm(`לשחזר את הטקסט המקורי של "${issue.title}"? העריכה שלא פורסמה תימחק.`)) return;
+  state.editedFiles.delete(issue.sourceDate);
+  state.textCache.clear();
+  recomputeDirty();
+  render();
+  selectIssue(issue);
+  showToast('הטקסט המקורי שוחזר.');
 }
 
 /* ---------- text editing inside the preview ---------- */
@@ -888,13 +1095,14 @@ function finishTextEdit() {
     state.editedFiles.set(issue.sourceDate, html);
   } else {
     state.pendingFiles.set(issue.date, html);
+    if (issue.draftId) setDraftStatus(issue.draftId, 'added', { html });
   }
   state.textEditing = null;
   state.textCache.clear();
   setDirty(true);
   render();
   renderPreview(issue);
-  showToast('העריכה נשמרה בטיוטה. לחצו "פרסום השינויים לאתר החי" כדי להעלות אותה לאתר.');
+  showToast('העריכה נשמרה. היא תעלה לאתר בלחיצה על "פרסום לאתר".');
 }
 
 function cancelTextEdit() {
@@ -908,6 +1116,7 @@ function moveIssue(index, offset) {
   const target = index + offset;
   if (target < 0 || target >= state.issues.length) return;
   [state.issues[index], state.issues[target]] = [state.issues[target], state.issues[index]];
+  state.orderChanged = true;
   setDirty(true);
   render();
 }
@@ -951,8 +1160,8 @@ function openEditor(issue = null, imported = null) {
   $('issueTitle').value = issue?.title || imported?.title || '';
   $('issueSub').value = issue?.sub || imported?.sub || '';
   elements.dateHint.textContent = state.draftMeta
-    ? 'ברירת המחדל: יום שני הקרוב. בדקו מול לוח השנה העברי שהתאריך לא נופל על חג, צום או חול המועד. מספר הגיליון והתאריך במאסטהד מתעדכנים לפי השדה הזה.'
-    : 'התאריך בארכיון ובשם הקובץ. תוכן ה-HTML עצמו נשאר כפי שהועלה.';
+    ? 'ברירת המחדל: יום שני הקרוב. ודאו שלא חג או צום. המאסטהד מתעדכן לפי התאריך.'
+    : 'התאריך בארכיון ובשם הקובץ. תוכן ה-HTML נשאר כפי שהועלה.';
   const notes = state.draftMeta?.notes || [];
   elements.draftNotes.hidden = !notes.length;
   elements.draftNotesList.replaceChildren(...notes.map(note => {
@@ -1010,9 +1219,13 @@ async function loadData(data) {
   state.textEditing = null;
   state.deletedDates.clear();
   state.textCache.clear();
+  state.orderChanged = false;
   state.loadedFiles = new Map();
   state.selectedDate = state.issues[0]?.date || null;
   setDirty(false);
+  // טיוטות שהיו ברשימה ולא פורסמו חוזרות למצב "ממתינה לבדיקה".
+  await loadDrafts();
+  for (const draft of state.drafts.filter(item => item.status === 'added')) await setDraftStatus(draft.id, 'draft');
   render();
   setLoading(true);
   try {
@@ -1183,26 +1396,29 @@ elements.issueForm.addEventListener('submit', event => {
       html = applyIssueMeta(html, nextNumber, date)
         .replace(/(<meta property="og:title" content=")[^"]*(")/, `$1${escapeHtml(title)}$2`);
     }
+    const draftId = state.draftMeta ? state.draftMeta.id : null;
     if (elements.scheduleCheck.checked) {
       window.newsletterApp.scheduleAdd({ date, title, sub, html })
         .then(entries => {
           state.scheduled = entries;
           state.importedHtml = null;
           state.draftMeta = null;
+          if (draftId) setDraftStatus(draftId, 'scheduled', { date, title, sub, html });
           closeEditor();
           renderScheduled();
-          showToast(`הגיליון נשמר כגיליון עתידי ל-${prettyDate(date)}. ביום היעד תוצג התראה לפרסום.`);
+          showToast(`נשמר כגיליון עתידי ל-${prettyDate(date)}. ביום היעד תופיע כאן התראה לפרסום.`);
         })
         .catch(error => { elements.editorError.textContent = cleanError(error.message); });
       return;
     }
-    state.issues.unshift({ n: nextNumber, date, title, sub, sourceDate: null });
+    state.issues.unshift({ n: nextNumber, date, title, sub, sourceDate: null, draftId });
     state.pendingFiles.set(date, html);
     state.importedHtml = null;
     state.selectedDate = date;
-    if (state.draftMeta) {
+    if (draftId) {
       state.draftMeta = null;
-      showToast('הטיוטה נוספה לרשימה ומוצגת בתצוגה המקדימה. בדקו אותה (אפשר לערוך את הטקסט), ואז לחצו "פרסום השינויים לאתר החי".');
+      setDraftStatus(draftId, 'added', { date, title, sub, html, n: nextNumber });
+      showToast('הטיוטה ברשימה. בדקו אותה בתצוגה, ערכו אם צריך, ואז "פרסום לאתר".');
     }
   } else {
     const issue = state.issues.find(item => item.date === state.editingDate);
@@ -1252,15 +1468,17 @@ async function publishChanges() {
         editedFiles[issue.sourceDate] = state.editedFiles.get(issue.sourceDate);
       }
     }
+    const publishedDrafts = kept.filter(issue => !issue.sourceDate && issue.draftId).map(issue => issue.draftId);
     const result = await window.newsletterApp.save({
       headSha: state.headSha,
       issues: kept.map(({ n, date, title, sub, sourceDate }) => ({ n, date, title, sub, sourceDate })),
       newFiles,
       editedFiles
     });
+    for (const id of publishedDrafts) await setDraftStatus(id, 'published');
     await loadData(result);
     setFlowStep(3, true);
-    showToast('השינויים פורסמו. האתר מתעדכן תוך דקה-שתיים. את המייל משגרים ברב מסר.');
+    showToast('פורסם. האתר מתעדכן תוך דקה-שתיים. את המייל משגרים ברב מסר.');
   } catch (error) {
     setDirty(true);
     showToast(error.message, true);
@@ -1318,12 +1536,8 @@ function importFromContent(name, content) {
 
 const discoveryApi = () => window.newsletterApp.discovery;
 
-function setFlowStep(step, done = false) {
-  [1, 2, 3].forEach(n => {
-    const element = $(`flowStep${n}`);
-    element.classList.toggle('active', n === step && !done);
-    element.classList.toggle('done', n < step || (n === step && done));
-  });
+function setFlowStep() {
+  if (state.updates.loaded) updateFlow();
 }
 
 function applyUpdatesState(data) {
@@ -1359,13 +1573,16 @@ function renderUpdates() {
   if (settings.monitor.enabled) parts.push(settings.monitor.intervalHours === 1 ? 'כל שעה' : `כל ${settings.monitor.intervalHours} שעות`);
   elements.monitorInfo.textContent = parts.join(' · ');
   if (u.ai && u.ai.available) {
-    elements.aiChip.textContent = `AI פעיל · ${u.ai.source === 'local' ? 'מפתח מהמחשב הזה' : 'מפתח מהגדרות האתר'}`;
+    elements.aiChip.textContent = '✓ AI מחובר';
+    elements.aiChip.title = u.ai.source === 'local' ? 'מפתח שמור במחשב הזה' : 'מפתח מהגדרות האתר';
     elements.aiChip.className = 'ai-chip on';
   } else if (!state.canWrite) {
-    elements.aiChip.textContent = 'AI: התחברו כדי לטעון את המפתח מהאתר';
+    elements.aiChip.textContent = 'AI: צריך להתחבר';
+    elements.aiChip.title = 'המפתח נטען מהאתר אחרי התחברות';
     elements.aiChip.className = 'ai-chip off';
   } else {
-    elements.aiChip.textContent = 'AI לא מוגדר · דירוג לפי מילות מפתח בלבד';
+    elements.aiChip.textContent = 'AI לא מחובר';
+    elements.aiChip.title = 'בלי AI הדירוג לפי מילות מפתח, ואין ניסוח. פרטים בהגדרות.';
     elements.aiChip.className = 'ai-chip off';
   }
   renderFindings();
@@ -1374,10 +1591,35 @@ function renderUpdates() {
   const newCount = u.findings.filter(finding => finding.status === 'new' && finding.relevance >= 7).length;
   elements.updatesBadge.hidden = newCount === 0;
   elements.updatesBadge.textContent = String(newCount);
-  if (!u.findings.length) setFlowStep(1);
-  else if (state.view === 'updates' && !state.pendingDraft) setFlowStep(2);
+  updateFlow();
   updateBars();
 }
+
+// פס השלבים משקף את המצב בפועל וגם מנווט: 1 סריקה, 2 ממצאים, 3 גיליונות.
+function updateFlow() {
+  const u = state.updates;
+  const newFindings = u.findings.filter(finding => finding.status === 'new').length;
+  const waitingDrafts = (state.drafts || []).filter(draft => draft.status === 'draft' || draft.status === 'added').length;
+  const last = u.status.lastRun ? `נסרק ${relativeTime(u.status.lastRun)}` : 'עדיין לא נסרק';
+  $('flowStep1Text').textContent = newFindings ? `${last} · ${newFindings} ממצאים חדשים` : last;
+  $('flowStep2Text').textContent = u.selected.size ? `נבחרו ${u.selected.size} · לחצו "ניסוח גיליון"` : 'מסמנים עדכונים ולוחצים "ניסוח"';
+  $('flowStep3Text').textContent = waitingDrafts ? `${waitingDrafts} טיוטות ממתינות בגיליונות` : 'בגיליונות: בודקים, עורכים, מפרסמים';
+  const step = waitingDrafts ? 3 : (newFindings ? 2 : 1);
+  [1, 2, 3].forEach(n => {
+    const element = $(`flowStep${n}`);
+    element.classList.toggle('active', n === step);
+    element.classList.toggle('done', n < step);
+  });
+}
+document.querySelectorAll('.flow-step').forEach(step => {
+  step.addEventListener('click', () => {
+    const n = Number(step.dataset.step);
+    if (n === 1) runScan();
+    else if (n === 2) elements.findingsList.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else setView('issues');
+  });
+});
+elements.emptyScanButton.addEventListener('click', runScan);
 
 function relevanceChip(relevance) {
   if (relevance >= 7) return '<span class="relevance high">חשוב</span>';
@@ -1690,11 +1932,11 @@ async function runScan() {
     applyUpdatesState(data);
     const summary = data.result.summary;
     const bits = [];
-    bits.push(summary.newCount ? `נמצאו ${summary.newCount} פריטים חדשים, מתוכם ${summary.importantCount} חשובים` : 'לא נמצאו פריטים חדשים מאז הסריקה הקודמת');
-    if (summary.sourcesFailed) bits.push(`${summary.sourcesFailed} מקורות לא נענו`);
+    bits.push(summary.newCount ? `${summary.newCount} חדשים, ${summary.importantCount} חשובים` : 'אין חדש מאז הסריקה הקודמת');
+    if (summary.sourcesFailed) bits.push(`${summary.sourcesFailed} מקורות לא נענו (מסומנים ברשימה)`);
     showToast(`${bits.join(' · ')}.`, false);
-    if (summary.scoringError) showToast(`הדירוג עם AI נכשל, הפריטים דורגו לפי מילות מפתח: ${summary.scoringError}`, true);
-    else if (summary.searchError) showToast(`החיפוש ברשת עם AI נכשל: ${summary.searchError}`, true);
+    if (summary.scoringError) showToast(`הדירוג עם AI לא הצליח, דורג לפי מילות מפתח. ${summary.scoringError}`, true);
+    else if (summary.searchError) showToast(`החיפוש ברשת לא הצליח: ${summary.searchError}`, true);
     if (summary.newCount) {
       state.updates.filter = 'new';
       document.querySelectorAll('.filter-chips .chip').forEach(chip => chip.classList.toggle('active', chip.dataset.filter === 'new'));
@@ -1716,9 +1958,7 @@ elements.monitorToggle.addEventListener('change', async () => {
   try {
     state.updates.settings = await window.newsletterApp.settings.set({ monitor: { enabled: elements.monitorToggle.checked } });
     renderUpdates();
-    showToast(elements.monitorToggle.checked
-      ? 'המעקב האוטומטי הופעל. האפליקציה תבדוק את המקורות ברקע ותתריע בהודעת Windows על חומר חשוב.'
-      : 'המעקב האוטומטי כבוי.');
+    showToast(elements.monitorToggle.checked ? '✓ מעקב אוטומטי פעיל. תקבלו הודעה כשיימצא חומר חשוב.' : 'המעקב האוטומטי כבוי.');
   } catch (error) {
     showToast(error.message, true);
   }
@@ -1765,8 +2005,8 @@ async function generateDraft() {
   if (!u.ai || !u.ai.available) {
     const features = window.newsletterApp.features || {};
     showToast(features.localKey
-      ? 'לניסוח עם AI צריך מפתח. פתחו את "הגדרות מעקב ו-AI" והזינו מפתח Anthropic, או התחברו כדי לקבל את המפתח מהאתר.'
-      : (state.canWrite ? 'לניסוח עם AI צריך מפתח באתר: הגדירו ANTHROPIC_API_KEY ב-Vercel ועשו Redeploy.' : 'התחברו קודם: המפתח ל-AI נטען מהאתר למשתמש מחובר.'), true);
+      ? 'AI לא מחובר. התחברו לאתר, או הזינו מפתח בהגדרות.'
+      : (state.canWrite ? 'AI לא מוגדר באתר (ANTHROPIC_API_KEY ב-Vercel).' : 'התחברו קודם, ה-AI נטען מהאתר.'), true);
     if (features.localKey) openSettings();
     return;
   }
@@ -1774,7 +2014,9 @@ async function generateDraft() {
   elements.draftTitle.textContent = 'כותבים את הגיליון...';
   elements.draftResult.hidden = true;
   elements.draftResult.innerHTML = '';
+  elements.draftSavedNote.hidden = true;
   elements.draftCloseButton.hidden = true;
+  elements.draftRetryButton.hidden = true;
   elements.draftOpenButton.hidden = true;
   setDraftStep('draftStepRead', ids.length ? 'active' : 'done', '');
   setDraftStep('draftStepWrite', ids.length ? '' : 'active');
@@ -1797,7 +2039,18 @@ async function generateDraft() {
     setDraftStep('draftStepRead', 'done', '');
     setDraftStep('draftStepWrite', 'done');
     setDraftStep('draftStepRender', result.problems.length ? 'failed' : 'done');
-    state.pendingDraft = result;
+    const findingTitles = ids.map(id => (u.findings.find(finding => finding.id === id) || {}).title).filter(Boolean);
+    const record = await saveDraftRecord({
+      id: `d-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      status: 'draft',
+      title: result.draft.title, sub: result.draft.sub, subject: result.draft.subject,
+      date: result.date, n: result.n, html: result.html,
+      notes: result.draft.editorNotes || [], problems: result.problems || [],
+      findingIds: ids, findingTitles, instructions
+    });
+    state.pendingDraft = { ...result, id: record.id, findingIds: ids };
+    elements.draftSavedNote.hidden = false;
+    elements.draftRetryButton.hidden = false;
     elements.draftTitle.textContent = 'הטיוטה מוכנה';
     const notes = (result.draft.editorNotes || []).map(note => `<li>${escapeHtml(note)}</li>`).join('');
     const problems = (result.problems || []).map(problem => `<li class="warn">${escapeHtml(problem)}</li>`).join('');
@@ -1810,8 +2063,7 @@ async function generateDraft() {
     elements.draftResult.hidden = false;
     elements.draftCloseButton.hidden = false;
     elements.draftOpenButton.hidden = false;
-    elements.draftOpenButton.textContent = state.canWrite ? 'פתיחת הטיוטה לבדיקה ולפרסום' : 'שמירת הטיוטה כקובץ HTML';
-    elements.draftInstructions.value = '';
+    elements.draftOpenButton.textContent = state.canWrite ? 'לבדיקה ולפרסום' : 'הורדה כקובץ HTML';
     u.selected.clear();
     await loadUpdates();
   } catch (error) {
@@ -1829,27 +2081,36 @@ elements.draftButton.addEventListener('click', generateDraft);
 elements.draftCloseButton.addEventListener('click', () => { elements.draftBackdrop.hidden = true; });
 
 elements.draftOpenButton.addEventListener('click', async () => {
-  const draft = state.pendingDraft;
-  if (!draft) return;
+  const pending = state.pendingDraft;
+  if (!pending) return;
   elements.draftBackdrop.hidden = true;
+  elements.draftInstructions.value = '';
   if (!state.canWrite) {
     try {
-      const saved = await window.newsletterApp.saveFile({ name: `${draft.date}.html`, content: draft.html });
-      if (saved) showToast(`הטיוטה נשמרה: ${saved}. כדי לפרסם לאתר, התחברו עם הרשאת ניהול והוסיפו אותה כגיליון.`);
+      const saved = await window.newsletterApp.saveFile({ name: `${pending.date}.html`, content: pending.html });
+      if (saved) showToast(`נשמר: ${saved}. הטיוטה נשארת גם תחת "טיוטות".`);
     } catch (error) {
       showToast(error.message, true);
     }
     return;
   }
-  setView('issues');
-  openEditor(null, {
-    date: draft.date,
-    title: draft.draft.title,
-    sub: draft.draft.sub,
-    html: draft.html,
-    aiDraft: { n: draft.n, notes: draft.draft.editorNotes || [], problems: draft.problems || [] }
-  });
-  setFlowStep(3);
+  const record = state.drafts.find(item => item.id === pending.id);
+  if (record) openDraftForReview(record);
+});
+
+// ניסוח מחדש: אותם עדכונים, הנחיות אחרות.
+elements.draftRetryButton.addEventListener('click', () => {
+  const pending = state.pendingDraft;
+  elements.draftBackdrop.hidden = true;
+  if (pending && pending.findingIds) {
+    for (const id of pending.findingIds) if (state.updates.findings.some(finding => finding.id === id)) state.updates.selected.add(id);
+    state.updates.filter = 'all';
+    document.querySelectorAll('.filter-chips .chip').forEach(chip => chip.classList.toggle('active', chip.dataset.filter === 'all'));
+    renderFindings();
+    updateBars();
+  }
+  elements.draftInstructions.focus();
+  showToast('שנו את ההנחיות ולחצו שוב "ניסוח גיליון". הטיוטה הקודמת נשארת שמורה.');
 });
 
 /* ---------- settings ---------- */
@@ -1873,10 +2134,32 @@ async function openSettings() {
   elements.aiKeyInput.value = '';
   elements.aiKeyStatus.textContent = '';
   elements.aiKeyStatus.style.color = '';
-  elements.aiKeyInput.placeholder = u.ai.available ? (u.ai.source === 'local' ? 'מפתח שמור במחשב הזה · הזינו מפתח חדש להחלפה' : 'מפתח נטען מהגדרות האתר · אפשר להזין מפתח משלכם') : 'sk-ant-...';
+  const features = window.newsletterApp.features || {};
+  if (u.ai.available) {
+    elements.aiConnState.textContent = '✓ מחובר';
+    elements.aiConnState.className = 'conn-state ok';
+    elements.aiConnState.title = u.ai.source === 'local' ? 'מפתח שמור במחשב הזה' : 'מפתח מהגדרות האתר';
+  } else {
+    elements.aiConnState.textContent = features.localKey ? 'לא מחובר. התחברו לאתר, או הזינו מפתח למטה.' : (state.canWrite ? 'לא מוגדר באתר. מנהל האתר מגדיר ANTHROPIC_API_KEY ב-Vercel.' : 'התחברו לאתר כדי לחבר את ה-AI.');
+    elements.aiConnState.className = 'conn-state off';
+    elements.aiConnState.title = '';
+  }
+  elements.aiKeyDetails.hidden = !features.localKey;
+  elements.aiKeyDetails.open = features.localKey && !u.ai.available;
+  $('aiKeySummary').textContent = u.ai.source === 'local' ? 'החלפת המפתח השמור' : 'הזנת מפתח משלכם';
+  elements.shortcutStatus.textContent = '';
   elements.settingsError.textContent = '';
   elements.settingsBackdrop.hidden = false;
 }
+
+elements.shortcutButton.addEventListener('click', async () => {
+  try {
+    const result = await window.newsletterApp.createShortcut();
+    elements.shortcutStatus.textContent = result.ok ? '✓ נוצר בשולחן העבודה' : (result.reason || 'לא נוצר');
+  } catch (error) {
+    elements.shortcutStatus.textContent = cleanError(error.message);
+  }
+});
 elements.settingsButton.addEventListener('click', openSettings);
 $('closeSettingsButton').addEventListener('click', () => { elements.settingsBackdrop.hidden = true; renderUpdates(); });
 $('settingsDoneButton').addEventListener('click', () => { elements.settingsBackdrop.hidden = true; renderUpdates(); });
@@ -1906,7 +2189,9 @@ $('aiKeySaveButton').addEventListener('click', async () => {
     state.updates.ai = await window.newsletterApp.ai.setKey(key);
     elements.aiKeyInput.value = '';
     elements.aiKeyStatus.style.color = '#2d7a4f';
-    elements.aiKeyStatus.textContent = key ? 'המפתח נשמר מוצפן במחשב הזה.' : 'המפתח המקומי נמחק.';
+    elements.aiKeyStatus.textContent = key ? '✓ נשמר' : 'המפתח המקומי נמחק.';
+    elements.aiConnState.textContent = state.updates.ai.available ? '✓ מחובר' : 'לא מחובר';
+    elements.aiConnState.className = `conn-state ${state.updates.ai.available ? 'ok' : 'off'}`;
     renderUpdates();
   } catch (error) {
     elements.aiKeyStatus.style.color = '';
@@ -1919,7 +2204,7 @@ $('aiKeyTestButton').addEventListener('click', async () => {
   try {
     const result = await window.newsletterApp.ai.testKey(elements.aiKeyInput.value.trim() || null);
     elements.aiKeyStatus.style.color = '#2d7a4f';
-    elements.aiKeyStatus.textContent = `המפתח תקין. המודל: ${result.model}.`;
+    elements.aiKeyStatus.textContent = `✓ תקין (${result.model})`;
   } catch (error) {
     elements.aiKeyStatus.textContent = cleanError(error.message);
   }
@@ -1935,6 +2220,7 @@ async function startup() {
     return;
   }
   const features = window.newsletterApp.features || {};
+  loadDrafts();
   if (features.discovery) {
     elements.navUpdates.hidden = false;
     elements.navSources.hidden = false;
@@ -1946,10 +2232,8 @@ async function startup() {
       $('settingsWindowsSection').hidden = true;
       $('sourcesWebNote').hidden = false;
     }
-    if (!features.localKey) {
-      $('aiKeyRow').hidden = true;
-      elements.aiKeyHint.textContent = 'בדף הניהול באתר המפתח מגיע מהגדרות האתר ב-Vercel (ANTHROPIC_API_KEY) ונטען אוטומטית אחרי התחברות. אפשר לשמור מפתח מקומי רק באפליקציית הדסקטופ.';
-    }
+    if (!features.localKey) elements.aiKeyDetails.hidden = true;
+    if (!features.shortcut) elements.shortcutButton.parentElement.hidden = true;
     window.newsletterApp.onNavigate(view => setView(view));
     window.newsletterApp.onRunDiscovery(() => { setView('updates'); runScan(); });
     window.newsletterApp.discovery.onFinished(event => {

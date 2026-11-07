@@ -122,6 +122,17 @@ const assert = require('node:assert');
   assert.strictEqual(issues.saveText, '⬆ פרסום לאתר');
   await page.screenshot({ path: path.join(__dirname, 'smoke-main.png') });
 
+  // תצוגה מלאה: נפתחת, עוברת לנייד, ונסגרת ב-Esc
+  await page.waitForFunction(() => !document.getElementById('fullPreviewButton').disabled, null, { timeout: 15000 });
+  await page.click('#fullPreviewButton');
+  await page.waitForSelector('#previewBackdrop:not([hidden])');
+  await page.click('#fullDeviceMobile');
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: path.join(__dirname, 'smoke-full-preview.png') });
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.getElementById('previewBackdrop').hidden);
+  console.log('FULL PREVIEW OK; drafts panel hidden without drafts:', await page.evaluate(() => document.getElementById('draftsPanel').hidden));
+
   await app.close();
   fs.rmSync(appData, { recursive: true, force: true });
   console.log('UPDATES SMOKE OK');

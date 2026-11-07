@@ -505,12 +505,64 @@ h1 { margin-bottom: 2px; font-size: 28px; line-height: 1.3; letter-spacing: -.01
 .source-row-status.error { color: #b3301a; white-space: normal; max-width: 260px; }
 .source-row-actions { display: flex; gap: 6px; }
 .diag-label { margin: -6px 0 12px; font-size: 11px; line-height: 1.7; color: var(--ink-soft); }
+.side-hint { display: none; }
 .diag-label .ok { color: #2d7a4f; }
 .diag-label .warn { color: #b3301a; font-weight: 700; }
 .diag-label .row { display: flex; align-items: center; gap: 6px; }
 .diag-label .state-dot { width: 7px; height: 7px; box-shadow: none; }
 .diag-label .warn .state-dot { background: var(--orange); }
 .diag-label .ok .state-dot { background: #3fae74; }
+
+/* ---------- review banner + drafts ---------- */
+.preview-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.review-banner {
+  margin-bottom: 12px; padding: 12px 14px; border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #fffdf4, #fff8e2); border: 1px solid #f0e3b4; color: #3d2a06; font-size: 12.5px; line-height: 1.6;
+}
+.review-steps { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 700; color: #8a7a3a; margin-bottom: 4px; }
+.review-steps .done { color: #2d7a4f; }
+.review-steps .current { padding: 2px 9px; border-radius: 99px; background: var(--yellow); color: #3d2a06; }
+.review-steps .sep { color: #c9b981; }
+.review-text { font-weight: 600; }
+.review-notes { margin-top: 6px; font-size: 12px; }
+.review-notes ul { margin: 2px 0 0; padding-right: 16px; }
+.drafts-panel {
+  margin: 14px 0 4px; padding: 14px 16px; border: 1px solid #ddd0ec; border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #fdfbff, #f6f1fb);
+}
+.drafts-title { display: flex; align-items: baseline; gap: 10px; font-size: 12px; font-weight: 800; color: var(--purple); margin-bottom: 9px; }
+.drafts-title small { color: var(--ink-faint); font-weight: 600; }
+.draft-item {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 13px; margin-bottom: 8px;
+  background: #fff; border: 1px solid #e6def0; border-radius: var(--radius-sm);
+}
+.draft-item:last-child { margin-bottom: 0; }
+.draft-item .draft-meta { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; font-size: 10.5px; color: var(--ink-faint); }
+.draft-item .draft-title { font-size: 13px; font-weight: 700; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.draft-status { padding: 2px 9px; border-radius: 99px; font-weight: 800; font-size: 10px; }
+.draft-status.draft { background: var(--yellow); color: #3d2a06; }
+.draft-status.added { background: #e2f5f3; color: var(--teal-ink); }
+.draft-status.published { background: #e4f3ea; color: #2d7a4f; }
+.draft-status.scheduled { background: var(--purple-soft); color: var(--purple); }
+.draft-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.flow-step { font: inherit; text-align: right; cursor: pointer; }
+.flow-step:hover { border-color: #b391d6; }
+.flow-step:focus-visible { outline: 2px solid var(--purple); outline-offset: 2px; }
+.conn-state { font-size: 13px; font-weight: 700; color: var(--ink-soft); }
+.conn-state.ok { color: #2d7a4f; }
+.conn-state.off { color: #b3301a; }
+#aiKeyDetails summary { cursor: pointer; font-size: 12px; color: var(--purple); font-weight: 700; }
+#aiKeyDetails[open] summary { margin-bottom: 8px; }
+.static-empty .button { margin-top: 10px; pointer-events: auto; }
+.preview-empty .button { pointer-events: auto; }
+
+/* ---------- full preview ---------- */
+.full-preview { width: min(96vw, 1100px); height: 92vh; display: flex; flex-direction: column; border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-lg); overflow: hidden; animation: rise .22s var(--ease); }
+.full-preview-bar { display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-bottom: 1px solid #efe9f5; }
+.full-preview-bar strong { flex: 1; font-size: 14px; }
+.full-preview-device { flex: 1; position: relative; background: linear-gradient(180deg, #f1edf7, #ece6f4); }
+.full-preview-device iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #fff; }
+.full-preview-device.mobile iframe { left: 50%; right: auto; width: 375px; transform: translateX(-50%); border-inline: 1px solid #d9d0e6; }
 
 /* ---------- draft + settings modals ---------- */
 .draft-modal { width: min(100%, 560px); }

@@ -7,7 +7,7 @@ function subscribe(channel, callback) {
 }
 
 contextBridge.exposeInMainWorld('newsletterApp', {
-  features: { discovery: true, monitor: true, localKey: true, desktop: true },
+  features: { discovery: true, monitor: true, localKey: true, desktop: true, shortcut: true, openPreview: true },
   getSession: () => ipcRenderer.invoke('newsletter:get-session'),
   login: details => ipcRenderer.invoke('newsletter:login', details),
   logout: () => ipcRenderer.invoke('newsletter:logout'),
@@ -23,6 +23,13 @@ contextBridge.exposeInMainWorld('newsletterApp', {
   saveFile: file => ipcRenderer.invoke('newsletter:save-file', file),
   openExternal: url => ipcRenderer.invoke('app:open-external', url),
   diagnostics: () => ipcRenderer.invoke('newsletter:diagnostics'),
+  createShortcut: () => ipcRenderer.invoke('app:create-shortcut'),
+  openPreview: html => ipcRenderer.invoke('app:open-preview', html),
+  drafts: {
+    list: () => ipcRenderer.invoke('drafts:list'),
+    save: draft => ipcRenderer.invoke('drafts:save', draft),
+    remove: id => ipcRenderer.invoke('drafts:remove', id)
+  },
 
   discovery: {
     state: () => ipcRenderer.invoke('discover:state'),

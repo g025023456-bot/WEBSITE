@@ -5,9 +5,12 @@
   "description": "Desktop manager for the Ho-me newsletter archive",
   "main": "main.cjs",
   "scripts": {
+    "prestart": "node build-admin.cjs",
     "start": "electron .",
-    "build": "electron-packager . NewsletterManager --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/icon.ico --app-copyright=\"הורה ומיוחד\" --win32metadata.ProductName=\"ניהול הניוזלטרים · הורה ומיוחד\" --win32metadata.FileDescription=\"ניהול הניוזלטרים · הורה ומיוחד\" --win32metadata.CompanyName=\"הורה ומיוחד\" --ignore=^/dist$ --ignore=test-.*\\.cjs --ignore=smoke-.*\\.png --ignore=web-bridge\\.js --ignore=build-admin\\.cjs --ignore=make-icons\\.cjs",
+    "release": "node release.cjs",
+    "build": "node release.cjs",
     "build-admin": "node build-admin.cjs",
+    "check-sync": "node check-sync.cjs",
     "icons": "electron make-icons.cjs",
     "smoke": "node test-drive.cjs",
     "smoke-updates": "node test-updates.cjs",

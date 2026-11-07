@@ -104,10 +104,21 @@ app.whenReady().then(async () => {
   await run('document.getElementById("draftOpenButton").click(); true');
   await waitFor('!document.getElementById("editorBackdrop").hidden');
   console.log('EDITOR', JSON.stringify(await run(`({ title: document.getElementById('issueTitle').value, date: document.getElementById('issueDate').value, notes: document.querySelectorAll('#draftNotesList li').length })`)));
+  console.log('DRAFTS SAVED', JSON.stringify(await run(`(() => { const d = JSON.parse(localStorage.getItem('nl.drafts') || '[]'); return { count: d.length, status: d[0] && d[0].status, notes: d[0] && d[0].notes.length }; })()`)));
   await run('document.getElementById("editorSubmit").click(); true');
   await waitFor('!document.getElementById("publishBar").hidden', 10000, 'publish bar');
   await new Promise(resolve => setTimeout(resolve, 1500));
-  console.log('ADDED', JSON.stringify(await run(`({ items: document.querySelectorAll('.issue-item').length, caption: document.getElementById('previewCaption').textContent, masthead: (document.getElementById('previewFrame').contentDocument.body.innerText.match(/גיליון \\d+ · [\\d.]+/) || [''])[0] })`)));
+  console.log('ADDED', JSON.stringify(await run(`({ items: document.querySelectorAll('.issue-item').length, caption: document.getElementById('previewCaption').textContent, reviewBanner: !document.getElementById('reviewBanner').hidden, reviewNotes: document.querySelectorAll('#reviewNotesList li').length, draftsPanel: !document.getElementById('draftsPanel').hidden, draftStatus: document.querySelector('.draft-status') && document.querySelector('.draft-status').textContent, masthead: (document.getElementById('previewFrame').contentDocument.body.innerText.match(/גיליון \\d+ · [\\d.]+/) || [''])[0] })`)));
+  // "ביטול השינויים" מחזיר את הטיוטה למצב ממתינה, ולא מאבד אותה
+  await run('window.confirm = () => true; document.getElementById("discardButton").click(); true');
+  await waitFor('document.getElementById("publishBar").hidden', 15000, 'discard');
+  await new Promise(resolve => setTimeout(resolve, 1200));
+  console.log('AFTER DISCARD', JSON.stringify(await run(`({ items: document.querySelectorAll('.issue-item').length, draftStatus: document.querySelector('.draft-status') && document.querySelector('.draft-status').textContent, badge: document.getElementById('draftsBadge').textContent })`)));
+  await run('document.querySelector("#draftsList .mini-button").click(); true');
+  await waitFor('!document.getElementById("editorBackdrop").hidden', 10000, 'reopen draft');
+  await run('document.getElementById("editorSubmit").click(); true');
+  await waitFor('!document.getElementById("publishBar").hidden', 10000, 'publish bar again');
+  await new Promise(resolve => setTimeout(resolve, 1200));
   fs.writeFileSync(path.join(__dirname, 'smoke-draft.html'), await run('state.pendingFiles.values().next().value'), 'utf8');
   await shot('smoke-web-ai-issue.png');
   console.log('WEB LIVE OK');

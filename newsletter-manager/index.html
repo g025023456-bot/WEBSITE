@@ -25,7 +25,7 @@
   <div class="app-shell">
     <aside class="sidebar">
       <div class="side-label">ניהול האתר</div>
-      <button type="button" class="side-link active" data-view="issues"><span class="side-icon">▤</span> גיליונות</button>
+      <button type="button" class="side-link active" data-view="issues"><span class="side-icon">▤</span> גיליונות <span id="draftsBadge" class="side-badge" hidden title="טיוטות שממתינות לבדיקה">0</span></button>
       <button type="button" class="side-link" data-view="updates" id="navUpdates" hidden><span class="side-icon">◎</span> עדכונים מהרשת <span id="updatesBadge" class="side-badge" hidden>0</span></button>
       <button type="button" class="side-link" data-view="sources" id="navSources" hidden><span class="side-icon">⚙</span> מקורות למעקב</button>
       <div class="sidebar-bottom">
@@ -33,7 +33,6 @@
         <div id="connectionLabel" class="folder-label">לא מחובר</div>
         <div id="diagLabel" class="diag-label" hidden></div>
         <button id="logoutButton" class="button button-outline button-wide" hidden>התנתקות</button>
-        <p class="side-hint">פרסום מעלה את השינויים לאתר תוך דקה-שתיים.</p>
       </div>
     </aside>
 
@@ -85,6 +84,10 @@
                 <div><h2>כל הגיליונות</h2><p>הראשון ברשימה מוצג באתר כגיליון האחרון</p></div>
                 <button id="addButton" class="button button-primary"><span class="plus">＋</span> הוספת גיליון</button>
               </div>
+              <section id="draftsPanel" class="drafts-panel" hidden>
+                <div class="drafts-title"><span>📝 טיוטות</span><small id="draftsCaption"></small></div>
+                <div id="draftsList"></div>
+              </section>
               <section id="scheduledPanel" class="scheduled-panel" hidden>
                 <div class="scheduled-title">⏳ גיליונות עתידיים · ממתינים לפרסום</div>
                 <div id="scheduledList"></div>
@@ -103,10 +106,21 @@
             <aside class="panel preview-panel">
               <div class="preview-heading">
                 <div><h2>תצוגה מקדימה</h2><p id="previewCaption">בחרו גיליון מהרשימה</p></div>
-                <div class="device-toggle" role="group" aria-label="גודל התצוגה">
-                  <button type="button" id="deviceDesktop" class="device-button active" aria-pressed="true">🖥 מחשב</button>
-                  <button type="button" id="deviceMobile" class="device-button" aria-pressed="false">📱 נייד</button>
+                <div class="preview-tools">
+                  <div class="device-toggle" role="group" aria-label="גודל התצוגה">
+                    <button type="button" id="deviceDesktop" class="device-button active" aria-pressed="true">🖥 מחשב</button>
+                    <button type="button" id="deviceMobile" class="device-button" aria-pressed="false">📱 נייד</button>
+                  </div>
+                  <button type="button" id="fullPreviewButton" class="mini-button" title="תצוגה בגודל מלא" disabled>⤢ מסך מלא</button>
+                  <button type="button" id="openPreviewButton" class="mini-button" title="פתיחה בדפדפן" disabled>↗ בדפדפן</button>
                 </div>
+              </div>
+              <div id="reviewBanner" class="review-banner" hidden>
+                <div class="review-steps">
+                  <span class="done">✓ טיוטה</span><span class="sep">←</span><span class="current">בדיקה ועריכה</span><span class="sep">←</span><span>פרסום לאתר</span>
+                </div>
+                <div id="reviewText" class="review-text">הגיליון עדיין לא באתר. בדקו את התצוגה, ערכו אם צריך, ואז לחצו "פרסום לאתר".</div>
+                <div id="reviewNotes" class="review-notes" hidden><strong>לאימות לפני הפרסום:</strong><ul id="reviewNotesList"></ul></div>
               </div>
               <div id="editToolbar" class="edit-toolbar" role="toolbar" aria-label="עיצוב טקסט" hidden>
                 <div class="tool-group">
@@ -188,11 +202,11 @@
         </header>
 
         <section class="flow-steps" aria-label="שלבי העבודה">
-          <div class="flow-step active" id="flowStep1"><span class="flow-num">1</span><div><strong>חיפוש</strong><small>סורקים את המקורות ואת הרשת</small></div></div>
+          <button type="button" class="flow-step active" id="flowStep1" data-step="1"><span class="flow-num">1</span><div><strong>חיפוש</strong><small id="flowStep1Text">סורקים את המקורות ואת הרשת</small></div></button>
           <div class="flow-arrow">←</div>
-          <div class="flow-step" id="flowStep2"><span class="flow-num">2</span><div><strong>ניסוח עם AI</strong><small>בוחרים עדכונים, ה-AI כותב ומעצב גיליון</small></div></div>
+          <button type="button" class="flow-step" id="flowStep2" data-step="2"><span class="flow-num">2</span><div><strong>ניסוח עם AI</strong><small id="flowStep2Text">מסמנים עדכונים ולוחצים "ניסוח"</small></div></button>
           <div class="flow-arrow">←</div>
-          <div class="flow-step" id="flowStep3"><span class="flow-num">3</span><div><strong>פרסום לאתר</strong><small>בודקים את הטיוטה ומפרסמים</small></div></div>
+          <button type="button" class="flow-step" id="flowStep3" data-step="3"><span class="flow-num">3</span><div><strong>בדיקה ופרסום</strong><small id="flowStep3Text">בגיליונות: בודקים, עורכים, מפרסמים</small></div></button>
         </section>
 
         <div id="scanStatus" class="scan-status" hidden>
@@ -206,9 +220,9 @@
             <span class="switch"></span>
             <span><strong>מעקב אוטומטי</strong> · בודק את המקורות ברקע ומתריע בהודעת Windows על חומר חשוב</span>
           </label>
-          <span id="monitorWebNote" class="monitor-info" hidden>מעקב אוטומטי ברקע והודעות Windows זמינים באפליקציית הדסקטופ. כאן: חיפוש, ניסוח ופרסום.</span>
+          <span id="monitorWebNote" class="monitor-info" hidden>מעקב ברקע והתראות: באפליקציית הדסקטופ</span>
           <span id="monitorInfo" class="monitor-info">עדיין לא נבדק</span>
-          <span id="aiChip" class="ai-chip">AI: בודק...</span>
+          <span id="aiChip" class="ai-chip" title="">AI</span>
         </section>
 
         <section class="content-grid updates-grid">
@@ -225,7 +239,8 @@
             <div id="findingsEmpty" class="preview-empty static-empty">
               <span>◎</span>
               <strong>עדיין אין ממצאים</strong>
-              <small>לחצו "חיפוש עדכונים חדשים" כדי לסרוק את המקורות</small>
+              <small>סריקה אחת של המקורות מביאה לכאן את מה שחדש</small>
+              <button type="button" id="emptyScanButton" class="button button-primary">🔍 חיפוש עכשיו</button>
             </div>
           </div>
 
@@ -242,7 +257,7 @@
               <div id="sourceError" class="form-error" role="alert"></div>
               <button type="submit" id="sourceAddButton" class="button button-outline button-wide">＋ הוספה ובדיקה</button>
             </form>
-            <div class="archive-note"><span>ⓘ</span><span>אתרי gov.il נטענים בסקריפט ולא ניתנים לקריאה ישירה. הם מכוסים בחיפוש ה-AI ברשת, שרץ בכל סריקה ידנית (אפשר לכבות בהגדרות).</span></div>
+            <div class="archive-note"><span>ⓘ</span><span>אתרי gov.il מכוסים בחיפוש ה-AI ברשת.</span></div>
           </aside>
         </section>
 
@@ -270,8 +285,8 @@
           <div id="sourceErrorFull" class="form-error" role="alert"></div>
           <div class="sources-table-head"><span id="sourcesCount">0 מקורות</span><span>מקור מושהה נשאר ברשימה אבל לא נבדק</span></div>
           <div id="sourcesTable" class="sources-table"></div>
-          <div class="archive-note"><span>ⓘ</span><span>דפים ממשלתיים ב-gov.il נטענים בסקריפט ולא ניתנים לקריאה ישירה, ולכן לא ניתן להוסיף אותם כאן. הם מכוסים בחיפוש ה-AI ברשת שרץ בכל "חיפוש עדכונים חדשים" (כשמוגדר מפתח AI).</span></div>
-          <div class="archive-note" id="sourcesWebNote" hidden><span>ⓘ</span><span>בדף הניהול באתר המקורות נקראים דרך שרת האתר. אתרים שחוסמים שרתים (כל זכות, לפעמים אלו"ט) יוצגו כ"לא נענה" כאן, אבל נקראים כרגיל באפליקציית הדסקטופ, שמגיעה מהמחשב שלכם.</span></div>
+          <div class="archive-note"><span>ⓘ</span><span>דפי gov.il לא ניתנים להוספה (נטענים בסקריפט); הם מכוסים בחיפוש ה-AI ברשת.</span></div>
+          <div class="archive-note" id="sourcesWebNote" hidden><span>ⓘ</span><span>מקור שמסומן "חוסם שרתים" (למשל כל זכות) נקרא רק באפליקציית הדסקטופ.</span></div>
         </section>
       </section>
 
@@ -333,9 +348,11 @@
         <li id="draftStepRender"><span class="step-dot"></span><span>עיצוב על תבנית הגיליונות שפורסמו ובדיקות טכניות</span></li>
       </ol>
       <div id="draftResult" class="draft-result" hidden></div>
+      <p id="draftSavedNote" class="settings-hint" hidden>הטיוטה נשמרה. תמצאו אותה תמיד תחת "טיוטות" בתצוגת הגיליונות.</p>
       <div class="modal-actions">
         <button type="button" id="draftCloseButton" class="button button-outline" hidden>סגירה</button>
-        <button type="button" id="draftOpenButton" class="button button-primary" hidden>פתיחת הטיוטה לבדיקה ולפרסום</button>
+        <button type="button" id="draftRetryButton" class="button button-outline" hidden>ניסוח מחדש</button>
+        <button type="button" id="draftOpenButton" class="button button-primary" hidden>לבדיקה ולפרסום</button>
       </div>
     </section>
   </div>
@@ -347,14 +364,18 @@
         <button id="closeSettingsButton" class="icon-button" aria-label="סגירה">×</button>
       </div>
       <div class="settings-section">
-        <h3>מפתח AI (Anthropic)</h3>
-        <p class="settings-hint" id="aiKeyHint">המפתח נשמר מוצפן במחשב הזה בלבד. אם מנהל האתר הגדיר מפתח ב-Vercel, הוא נטען אוטומטית למשתמש מחובר.</p>
-        <div class="key-row" id="aiKeyRow">
-          <input id="aiKeyInput" type="password" dir="ltr" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
-          <button type="button" id="aiKeyTestButton" class="button button-outline">בדיקה</button>
-          <button type="button" id="aiKeySaveButton" class="button button-primary">שמירה</button>
-        </div>
-        <div id="aiKeyStatus" class="form-error"></div>
+        <h3>חיבור ל-AI</h3>
+        <div id="aiConnState" class="conn-state">בודק...</div>
+        <details id="aiKeyDetails">
+          <summary id="aiKeySummary">הזנת מפתח משלכם</summary>
+          <p class="settings-hint" id="aiKeyHint">המפתח נשמר מוצפן במחשב הזה.</p>
+          <div class="key-row" id="aiKeyRow">
+            <input id="aiKeyInput" type="password" dir="ltr" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+            <button type="button" id="aiKeyTestButton" class="button button-outline">בדיקה</button>
+            <button type="button" id="aiKeySaveButton" class="button button-primary">שמירה</button>
+          </div>
+          <div id="aiKeyStatus" class="form-error"></div>
+        </details>
       </div>
       <div class="settings-section" id="settingsMonitorSection">
         <label class="check-row"><input type="checkbox" id="settingMonitor"><span>לבדוק את המקורות ברקע ולהתריע על חומר חשוב</span></label>
@@ -368,21 +389,36 @@
           </select>
         </label>
         <label class="check-row"><input type="checkbox" id="settingNotify"><span>הודעה קופצת ב-Windows כשנמצא עדכון חשוב</span></label>
-        <label class="check-row"><input type="checkbox" id="settingAutoWebSearch"><span>לכלול גם חיפוש AI ברשת בבדיקות האוטומטיות (עולה יותר)</span></label>
+        <label class="check-row"><input type="checkbox" id="settingAutoWebSearch"><span>לכלול חיפוש ברשת גם בבדיקות ברקע</span></label>
       </div>
       <div class="settings-section">
         <h3>חיפוש ברשת</h3>
-        <label class="check-row"><input type="checkbox" id="settingManualWebSearch"><span>לכלול חיפוש AI ברשת בלחיצה על "חיפוש עדכונים חדשים" (מכסה את gov.il; לוקח דקה-שתיים)</span></label>
+        <label class="check-row"><input type="checkbox" id="settingManualWebSearch"><span>לכלול חיפוש ברשת ב"חיפוש עדכונים חדשים" (מכסה גם את gov.il, לוקח דקה-שתיים)</span></label>
       </div>
       <div class="settings-section" id="settingsWindowsSection">
         <h3>Windows</h3>
-        <label class="check-row"><input type="checkbox" id="settingStartup"><span>להפעיל את האפליקציה ברקע עם ההדלקה של המחשב</span></label>
-        <label class="check-row"><input type="checkbox" id="settingTray"><span>כשסוגרים את החלון והמעקב פעיל, להמשיך לרוץ באזור ההתראות</span></label>
+        <label class="check-row"><input type="checkbox" id="settingStartup"><span>להפעיל ברקע עם הדלקת המחשב</span></label>
+        <label class="check-row"><input type="checkbox" id="settingTray"><span>כשסוגרים את החלון והמעקב פעיל, להישאר באזור ההתראות</span></label>
+        <div class="inline-field"><button type="button" id="shortcutButton" class="button button-outline">יצירת קיצור דרך בשולחן העבודה</button><span id="shortcutStatus" class="settings-hint"></span></div>
       </div>
       <div id="settingsError" class="form-error" role="alert"></div>
       <div class="modal-actions">
         <button type="button" id="settingsDoneButton" class="button button-primary">סגירה</button>
       </div>
+    </section>
+  </div>
+
+  <div id="previewBackdrop" class="modal-backdrop" hidden>
+    <section class="full-preview" role="dialog" aria-modal="true" aria-label="תצוגה מלאה">
+      <div class="full-preview-bar">
+        <strong id="fullPreviewCaption"></strong>
+        <div class="device-toggle" role="group" aria-label="גודל התצוגה">
+          <button type="button" id="fullDeviceDesktop" class="device-button active">🖥 מחשב</button>
+          <button type="button" id="fullDeviceMobile" class="device-button">📱 נייד</button>
+        </div>
+        <button type="button" id="closePreviewButton" class="icon-button" aria-label="סגירה">×</button>
+      </div>
+      <div id="fullPreviewDevice" class="full-preview-device"><iframe id="fullPreviewFrame" title="תצוגה מלאה של הגיליון" sandbox="allow-same-origin"></iframe></div>
     </section>
   </div>
 

@@ -49,7 +49,8 @@ const DEFAULT_SETTINGS = {
   manualWebSearch: true,
   startWithWindows: false,
   keepInTray: true,
-  trayHintShown: false
+  trayHintShown: false,
+  shortcutCreated: false
 };
 
 function settingsPath() {
@@ -75,6 +76,61 @@ async function setSettings(patch) {
   }
   updateTrayMenu(next);
   return next;
+}
+
+/* ---------- drafts (local, plain JSON) ---------- */
+// טיוטות: כל גיליון שנוסח עם AI נשמר כאן אוטומטית, כדי שלא יאבד עד הפרסום ויהיה זמין גם אחרי כן.
+
+function draftsPath() {
+  return path.join(app.getPath('userData'), 'drafts.json');
+}
+
+async function getDrafts() {
+  try {
+    const drafts = JSON.parse(await fs.readFile(draftsPath(), 'utf8'));
+    return Array.isArray(drafts) ? drafts : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+async function saveDrafts(drafts) {
+  await fs.writeFile(draftsPath(), JSON.stringify(drafts, null, 2), 'utf8');
+  return drafts;
+}
+
+async function upsertDraft(draft) {
+  const drafts = await getDrafts();
+  const index = drafts.findIndex(item => item.id === draft.id);
+  const now = new Date().toISOString();
+  if (index >= 0) drafts[index] = { ...drafts[index], ...draft, updatedAt: now };
+  else drafts.unshift({ ...draft, createdAt: draft.createdAt || now, updatedAt: now });
+  return saveDrafts(drafts.slice(0, 200));
+}
+
+async function removeDraft(id) {
+  const drafts = await getDrafts();
+  return saveDrafts(drafts.filter(item => item.id !== id));
+}
+
+/* ---------- desktop shortcut ---------- */
+
+function shortcutPath() {
+  return path.join(app.getPath('desktop'), 'ניהול הניוזלטרים · הורה ומיוחד.lnk');
+}
+
+function createDesktopShortcut() {
+  if (process.platform !== 'win32') return { ok: false, reason: 'לא Windows' };
+  if (!app.isPackaged) return { ok: false, reason: 'קיצור דרך נוצר רק מהגרסה המותקנת (לא מ-npm start).' };
+  const ok = shell.writeShortcutLink(shortcutPath(), 'create', {
+    target: process.execPath,
+    cwd: path.dirname(process.execPath),
+    icon: process.execPath,
+    iconIndex: 0,
+    description: 'ניהול הניוזלטרים · הורה ומיוחד',
+    appUserModelId: 'il.org.ho-me.newsletter-manager'
+  });
+  return { ok, path: shortcutPath() };
 }
 
 /* ---------- session persistence (encrypted, local) ---------- */
@@ -484,11 +540,31 @@ app.whenReady().then(async () => {
   });
   ipcMain.handle('monitor:run-now', () => monitorTick(true));
 
+  /* drafts + shortcut */
+  ipcMain.handle('drafts:list', () => getDrafts());
+  ipcMain.handle('drafts:save', (_event, draft) => upsertDraft(draft));
+  ipcMain.handle('drafts:remove', (_event, id) => removeDraft(id));
+  ipcMain.handle('app:create-shortcut', () => createDesktopShortcut());
+  ipcMain.handle('app:open-preview', async (_event, html) => {
+    // תצוגה בדפדפן המלא של המחשב: קובץ זמני בתיקיית הנתונים.
+    const file = path.join(app.getPath('userData'), 'preview.html');
+    await fs.writeFile(file, String(html), 'utf8');
+    await shell.openPath(file);
+    return true;
+  });
+
   createWindow();
   await createTray();
   const settings = await getSettings();
   if (app.isPackaged) {
     app.setLoginItemSettings({ openAtLogin: Boolean(settings.startWithWindows), path: process.execPath, args: ['--hidden'] });
+    // בהפעלה הראשונה של הגרסה המותקנת נוצר קיצור דרך בשולחן העבודה (פעם אחת; אפשר ליצור שוב מההגדרות).
+    if (!settings.shortcutCreated) {
+      try {
+        const result = createDesktopShortcut();
+        if (result.ok) await setSettings({ shortcutCreated: true });
+      } catch (error) { /* בלי קיצור דרך האפליקציה עדיין עובדת */ }
+    }
   }
   setTimeout(() => monitorTick(false), 90 * 1000);
   setInterval(() => monitorTick(false), 5 * 60 * 1000);

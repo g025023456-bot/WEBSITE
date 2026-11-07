@@ -1,0 +1,5 @@
+#!/bin/sh
+# לפני כל commit: דף הניהול באתר (admin/ + api/lib) נבנה מחדש מקוד הדסקטופ ונכנס ל-commit,
+# כך שהאתר והדסקטופ תמיד זהים. הפעלה חד-פעמית: git config core.hooksPath .githooks
+node newsletter-manager/build-admin.cjs || exit 1
+git add admin api/lib

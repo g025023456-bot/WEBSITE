@@ -366,9 +366,29 @@
 
   window.newsletterApp = {
     // מנוע העדכונים רץ גם כאן; מעקב ברקע, הודעות Windows ומפתח מקומי קיימים רק בדסקטופ.
-    features: { discovery: true, monitor: false, localKey: false, desktop: false },
+    features: { discovery: true, monitor: false, localKey: false, desktop: false, shortcut: false, openPreview: true },
     openExternal(url) { window.open(url, '_blank', 'noopener'); return Promise.resolve(); },
     diagnostics() { return call('diagnostics'); },
+    createShortcut: desktopOnly,
+    openPreview(html) {
+      // תצוגה בכרטיסייה חדשה בדפדפן.
+      const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+      window.open(url, '_blank', 'noopener');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return Promise.resolve(true);
+    },
+    drafts: {
+      async list() { const drafts = store.get('drafts', []); return Array.isArray(drafts) ? drafts : []; },
+      async save(draft) {
+        const drafts = await this.list();
+        const index = drafts.findIndex(item => item.id === draft.id);
+        const now = new Date().toISOString();
+        if (index >= 0) drafts[index] = { ...drafts[index], ...draft, updatedAt: now };
+        else drafts.unshift({ ...draft, createdAt: draft.createdAt || now, updatedAt: now });
+        return store.set('drafts', drafts.slice(0, 200));
+      },
+      async remove(id) { return store.set('drafts', (await this.list()).filter(item => item.id !== id)); }
+    },
     onNavigate: noop,
     onRunDiscovery: noop,
 
