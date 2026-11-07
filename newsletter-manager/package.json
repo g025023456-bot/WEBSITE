@@ -6,14 +6,21 @@
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "build": "electron-packager . NewsletterManager --platform=win32 --arch=x64 --out=dist --overwrite --ignore=^/dist$ --ignore=test-.*\\.cjs --ignore=smoke-.*\\.png --ignore=web-bridge\\.js",
+    "build": "electron-packager . NewsletterManager --platform=win32 --arch=x64 --out=dist --overwrite --icon=assets/icon.ico --app-copyright=\"הורה ומיוחד\" --win32metadata.ProductName=\"ניהול הניוזלטרים · הורה ומיוחד\" --win32metadata.FileDescription=\"ניהול הניוזלטרים · הורה ומיוחד\" --win32metadata.CompanyName=\"הורה ומיוחד\" --ignore=^/dist$ --ignore=test-.*\\.cjs --ignore=smoke-.*\\.png --ignore=web-bridge\\.js --ignore=build-admin\\.cjs --ignore=make-icons\\.cjs",
     "build-admin": "node build-admin.cjs",
+    "icons": "electron make-icons.cjs",
     "smoke": "node test-drive.cjs",
-    "test-api": "node test-api.cjs"
+    "smoke-updates": "node test-updates.cjs",
+    "test-api": "node test-api.cjs",
+    "test-template": "node test-template.cjs",
+    "test-discover": "node test-discover.cjs"
   },
   "devDependencies": {
     "@electron/packager": "^20.3.0",
     "electron": "^45.2.1",
     "playwright-core": "^1.64.1"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0"
   }
 }

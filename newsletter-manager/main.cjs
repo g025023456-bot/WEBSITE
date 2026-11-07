@@ -1,15 +1,81 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain, safeStorage } = require('electron');
+const { app, BrowserWindow, Menu, Tray, Notification, dialog, ipcMain, safeStorage, shell, nativeImage } = require('electron');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { GitHubStore } = require('./github.cjs');
 const CONFIG = require('./app-config.cjs');
+const { Discovery } = require('./discover.cjs');
+const { AiService } = require('./ai.cjs');
+const { renderIssue, contentProblems } = require('./template.cjs');
 
 app.setName('ho-me-newsletter-manager');
-app.setPath('userData', path.join(app.getPath('appData'), 'ho-me-newsletter-manager'));
+app.setAppUserModelId('il.org.ho-me.newsletter-manager');
+// HO_ME_USER_DATA: תיקיית נתונים חלופית לבדיקות אוטומטיות, כדי לא לגעת בנתוני המשתמש.
+app.setPath('userData', process.env.HO_ME_USER_DATA || path.join(app.getPath('appData'), 'ho-me-newsletter-manager'));
+
+const ASSETS = path.join(__dirname, 'assets');
+const APP_ICON = path.join(ASSETS, process.platform === 'win32' ? 'icon.ico' : 'icon.png');
+const START_HIDDEN = process.argv.includes('--hidden');
 
 let session = null;   // { email, password, canWrite }
 let anonStore = null; // anonymous GitHub reads for view-only mode
 let loadedHead = null;
+let mainWindow = null;
+let tray = null;
+let quitting = false;
+
+const discovery = new Discovery({ dataDir: path.join(app.getPath('userData'), 'discovery') });
+const ai = new AiService({
+  dataDir: app.getPath('userData'),
+  safeStorage,
+  getServerKey: async () => {
+    if (!session || !session.canWrite) return null;
+    const result = await callApi('aiKey', {});
+    return result.key || null;
+  }
+});
+
+/* ---------- single instance ---------- */
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => showWindow());
+}
+
+/* ---------- settings (local, plain) ---------- */
+
+const DEFAULT_SETTINGS = {
+  monitor: { enabled: false, intervalHours: 6, notify: true, webSearch: false },
+  manualWebSearch: true,
+  startWithWindows: false,
+  keepInTray: true,
+  trayHintShown: false
+};
+
+function settingsPath() {
+  return path.join(app.getPath('userData'), 'settings.json');
+}
+
+async function getSettings() {
+  try {
+    const stored = JSON.parse(await fs.readFile(settingsPath(), 'utf8'));
+    return { ...DEFAULT_SETTINGS, ...stored, monitor: { ...DEFAULT_SETTINGS.monitor, ...(stored.monitor || {}) } };
+  } catch (error) {
+    return { ...DEFAULT_SETTINGS, monitor: { ...DEFAULT_SETTINGS.monitor } };
+  }
+}
+
+async function setSettings(patch) {
+  const current = await getSettings();
+  const next = { ...current, ...patch, monitor: { ...current.monitor, ...(patch.monitor || {}) } };
+  next.monitor.intervalHours = [1, 3, 6, 12, 24].includes(Number(next.monitor.intervalHours)) ? Number(next.monitor.intervalHours) : 6;
+  await fs.writeFile(settingsPath(), JSON.stringify(next, null, 2), 'utf8');
+  if (app.isPackaged && typeof patch.startWithWindows === 'boolean') {
+    app.setLoginItemSettings({ openAtLogin: next.startWithWindows, path: process.execPath, args: ['--hidden'] });
+  }
+  updateTrayMenu(next);
+  return next;
+}
 
 /* ---------- session persistence (encrypted, local) ---------- */
 
@@ -158,12 +224,14 @@ async function login(details) {
     throw error;
   }
   session.canWrite = true;
+  ai.forgetServerKey();
   await persistSession();
   return loadData();
 }
 
 async function logout() {
   session = null;
+  ai.forgetServerKey();
   if (anonStore) anonStore.blobCache.clear();
   await persistSession();
 }
@@ -182,14 +250,113 @@ async function importHtml(window) {
   return { name: path.basename(result.filePaths[0]), content };
 }
 
+function sendToWindow(channel, payload) {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, payload);
+}
+
+function showWindow(navigateTo = null) {
+  if (!mainWindow || mainWindow.isDestroyed()) createWindow();
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+  if (navigateTo) sendToWindow('app:navigate', navigateTo);
+}
+
+function notify(title, body, navigateTo = 'updates') {
+  if (!Notification.isSupported()) return;
+  const notification = new Notification({ title, body, icon: path.join(ASSETS, 'icon-256.png') });
+  notification.on('click', () => showWindow(navigateTo));
+  notification.show();
+}
+
+/* ---------- discovery + monitoring ---------- */
+
+async function discoveryState() {
+  const [sources, findings, status, settings, aiStatus] = await Promise.all([
+    discovery.getSources(), discovery.getFindings(), discovery.getStatus(), getSettings(), ai.status()
+  ]);
+  return { sources, findings, status, settings, ai: aiStatus, running: discovery.running };
+}
+
+async function runDiscovery({ mode = 'manual', webSearch = false } = {}) {
+  const aiStatus = await ai.status();
+  const result = await discovery.run({
+    ai: aiStatus.available ? ai : null,
+    mode,
+    webSearch: webSearch && aiStatus.available,
+    onProgress: event => sendToWindow('discover:progress', event)
+  });
+  sendToWindow('discover:finished', { summary: result.summary, mode });
+  return result;
+}
+
+let monitorBusy = false;
+async function monitorTick(force = false) {
+  if (monitorBusy || discovery.running) return;
+  const settings = await getSettings();
+  if (!force && !settings.monitor.enabled) return;
+  const status = await discovery.getStatus();
+  const due = !status.lastAutoRun || (Date.now() - Date.parse(status.lastAutoRun)) >= settings.monitor.intervalHours * 3600 * 1000;
+  if (!force && !due) return;
+  monitorBusy = true;
+  try {
+    if (!session) await restoreSession();
+    const result = await runDiscovery({ mode: 'auto', webSearch: settings.monitor.webSearch });
+    if (settings.monitor.notify && result.important.length) {
+      const top = result.important.slice(0, 2).map(finding => `· ${finding.title}`).join('\n');
+      notify(
+        result.important.length === 1 ? 'נמצא עדכון חשוב חדש' : `נמצאו ${result.important.length} עדכונים חשובים`,
+        `${top}${result.important.length > 2 ? '\nועוד...' : ''}\nלחצו כדי לפתוח ולנסח גיליון.`
+      );
+    } else if (settings.monitor.notify && result.added.length && force) {
+      notify('הסריקה הסתיימה', `נמצאו ${result.added.length} פריטים חדשים, אף אחד מהם לא סומן כחשוב.`);
+    }
+  } catch (error) {
+    // שגיאת רשת בסריקה אוטומטית: ננסה שוב בבדיקה הבאה.
+  } finally {
+    monitorBusy = false;
+  }
+}
+
+/* ---------- tray ---------- */
+
+function updateTrayMenu(settings) {
+  if (!tray) return;
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'פתיחת ניהול הניוזלטרים', click: () => showWindow() },
+    { label: 'חיפוש עדכונים עכשיו', click: () => { showWindow('updates'); sendToWindow('app:run-discovery', {}); } },
+    { type: 'separator' },
+    {
+      label: 'מעקב אוטומטי אחרי המקורות',
+      type: 'checkbox',
+      checked: Boolean(settings.monitor.enabled),
+      click: async item => { await setSettings({ monitor: { enabled: item.checked } }); sendToWindow('settings:changed', await getSettings()); }
+    },
+    { type: 'separator' },
+    { label: 'יציאה', click: () => { quitting = true; app.quit(); } }
+  ]));
+}
+
+async function createTray() {
+  const image = nativeImage.createFromPath(path.join(ASSETS, 'tray.png'));
+  tray = new Tray(image);
+  tray.setToolTip('הורה ומיוחד · ניהול הניוזלטרים');
+  tray.on('click', () => showWindow());
+  updateTrayMenu(await getSettings());
+}
+
+/* ---------- window ---------- */
+
 function createWindow() {
-  const window = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1440,
     height: 960,
     minWidth: 1050,
     minHeight: 700,
+    show: !START_HIDDEN,
     backgroundColor: '#f5f2f8',
     title: 'ניהול הניוזלטרים · הורה ומיוחד',
+    icon: APP_ICON,
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
     titleBarOverlay: { color: '#562e8c', symbolColor: '#ffffff', height: 48 },
@@ -200,8 +367,20 @@ function createWindow() {
       sandbox: true
     }
   });
-  window.loadFile(path.join(__dirname, 'index.html'));
-  return window;
+  mainWindow.loadFile(path.join(__dirname, 'index.html'));
+  mainWindow.on('close', async event => {
+    if (quitting) return;
+    const settings = await getSettings().catch(() => DEFAULT_SETTINGS);
+    if (!settings.keepInTray || !settings.monitor.enabled) return;
+    event.preventDefault();
+    mainWindow.hide();
+    if (!settings.trayHintShown) {
+      await setSettings({ trayHintShown: true });
+      notify('ממשיכים לעקוב ברקע', 'האפליקציה ממשיכה לבדוק את המקורות ותתריע על עדכונים חשובים. ליציאה מלאה: לחיצה ימנית על האייקון באזור ההתראות.', null);
+    }
+  });
+  mainWindow.on('closed', () => { mainWindow = null; });
+  return mainWindow;
 }
 
 Menu.setApplicationMenu(null);
@@ -245,13 +424,83 @@ app.whenReady().then(async () => {
     return loadData();
   });
   ipcMain.handle('newsletter:import-html', event => importHtml(BrowserWindow.fromWebContents(event.sender)));
+  ipcMain.handle('newsletter:save-file', async (event, file) => {
+    const result = await dialog.showSaveDialog(BrowserWindow.fromWebContents(event.sender), {
+      title: 'שמירת קובץ HTML לרב מסר',
+      defaultPath: path.join(app.getPath('downloads'), path.basename(String(file.name))),
+      filters: [{ name: 'קובץ HTML', extensions: ['html'] }]
+    });
+    if (result.canceled || !result.filePath) return null;
+    await fs.writeFile(result.filePath, String(file.content), 'utf8');
+    return result.filePath;
+  });
+
+  /* discovery, sources, findings */
+  ipcMain.handle('app:open-external', (_event, url) => {
+    if (!/^https?:\/\//i.test(String(url))) throw new Error('כתובת לא תקינה.');
+    return shell.openExternal(String(url));
+  });
+  ipcMain.handle('discover:state', () => discoveryState());
+  ipcMain.handle('discover:run', async (_event, options) => {
+    const settings = await getSettings();
+    const webSearch = options && typeof options.webSearch === 'boolean' ? options.webSearch : settings.manualWebSearch;
+    const result = await runDiscovery({ mode: 'manual', webSearch });
+    return { ...(await discoveryState()), result: { summary: result.summary, sourceResults: result.sourceResults, addedCount: result.added.length, importantCount: result.important.length } };
+  });
+  ipcMain.handle('discover:source-add', async (_event, entry) => discovery.addSource(entry));
+  ipcMain.handle('discover:source-update', (_event, id, patch) => discovery.updateSource(id, patch || {}));
+  ipcMain.handle('discover:source-remove', (_event, id) => discovery.removeSource(id));
+  ipcMain.handle('discover:finding-status', (_event, ids, status) => discovery.setFindingStatus(ids, status));
+
+  /* settings + AI */
+  ipcMain.handle('settings:get', () => getSettings());
+  ipcMain.handle('settings:set', (_event, patch) => setSettings(patch || {}));
+  ipcMain.handle('ai:status', () => ai.status());
+  ipcMain.handle('ai:set-key', async (_event, key) => { await ai.setKey(key); return ai.status(); });
+  ipcMain.handle('ai:test-key', (_event, key) => ai.testKey(key));
+
+  /* drafting: findings → AI → full issue HTML on the published template */
+  ipcMain.handle('draft:generate', async (_event, request) => {
+    const findings = await discovery.getFindings();
+    const wanted = new Set(request.findingIds || []);
+    const selected = findings.filter(finding => wanted.has(finding.id));
+    if (!selected.length && !String(request.instructions || '').trim()) {
+      throw new Error('בחרו לפחות עדכון אחד, או כתבו נושא והנחיות לכותב.');
+    }
+    const draft = await ai.draft({
+      findings: selected,
+      instructions: String(request.instructions || ''),
+      styleSample: String(request.styleSample || ''),
+      onProgress: event => sendToWindow('draft:progress', event)
+    });
+    const n = Number(request.issueNumber) || 1;
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(request.date || '') ? request.date : new Date().toISOString().slice(0, 10);
+    const html = renderIssue({ n, date, content: draft });
+    if (selected.length) await discovery.setFindingStatus(selected.map(finding => finding.id), 'used');
+    return { html, n, date, draft, problems: contentProblems(html) };
+  });
+  ipcMain.handle('monitor:run-now', () => monitorTick(true));
 
   createWindow();
+  await createTray();
+  const settings = await getSettings();
+  if (app.isPackaged) {
+    app.setLoginItemSettings({ openAtLogin: Boolean(settings.startWithWindows), path: process.execPath, args: ['--hidden'] });
+  }
+  setTimeout(() => monitorTick(false), 90 * 1000);
+  setInterval(() => monitorTick(false), 5 * 60 * 1000);
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
+app.on('before-quit', () => { quitting = true; });
+
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin' && quitting) app.quit();
+  else if (process.platform !== 'darwin') {
+    // החלון נסגר בלי מעקב פעיל: יוצאים. עם מעקב פעיל החלון רק מוסתר, והאפליקציה נשארת בטריי.
+    getSettings().then(settings => { if (!settings.keepInTray || !settings.monitor.enabled) app.quit(); });
+  }
 });

@@ -270,6 +270,13 @@ async function actionSave(payload, userEmail) {
       if (!currentByDate.has(draft.sourceDate)) throw new Error('גיליון קיים השתנה במאגר. טענו מחדש.');
       html = await readFile(issuePath(draft.sourceDate), headSha);
       if (html === null) throw new Error(`הקובץ ${draft.sourceDate}.html חסר במאגר.`);
+      const editedHtml = payload.editedFiles && payload.editedFiles[draft.sourceDate];
+      if (typeof editedHtml === 'string') {
+        if (!/<html(?:\s|>)/i.test(editedHtml)) throw new Error(`הטקסט הערוך של ${draft.sourceDate} אינו מסמך HTML תקין.`);
+        html = prepareSiteHtml(editedHtml);
+        if (draft.sourceDate === draft.date) changes.push({ path: issuePath(draft.date), content: html });
+        summary.push(`עריכת טקסט בגיליון ${currentByDate.get(draft.sourceDate).n}`);
+      }
       if (draft.sourceDate !== draft.date) {
         if (currentByDate.has(draft.date) || await readFile(issuePath(draft.date), headSha) !== null) {
           throw new Error(`כבר קיים קובץ בשם ${draft.date}.html. לא בוצעו שינויים.`);
@@ -399,6 +406,8 @@ module.exports = async (req, res) => {
     let result;
     switch (action) {
       case 'ping': result = { ok: true, email }; break;
+      // מפתח ה-AI לאפליקציית הדסקטופ (ANTHROPIC_API_KEY בהגדרות Vercel), למשתמש מחובר בלבד.
+      case 'aiKey': result = { ok: true, key: process.env.ANTHROPIC_API_KEY || null }; break;
       case 'load': result = await actionLoad(); break;
       case 'readIssue': result = await actionReadIssue(payload); break;
       case 'save': result = await actionSave(payload, email); break;

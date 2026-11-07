@@ -36,7 +36,20 @@
     return btoa(unescape(encodeURIComponent(`${email}:${password}`)));
   }
 
+  const desktopOnly = () => Promise.reject(new Error('איתור עדכונים וניסוח עם AI זמינים באפליקציית הדסקטופ בלבד.'));
+  const noop = () => () => {};
+
   window.newsletterApp = {
+    // מנוע העדכונים (מעקב, התראות, ניסוח AI) רץ רק בדסקטופ; דף הווב מציג את ניהול הגיליונות בלבד.
+    features: { discovery: false, desktop: false },
+    openExternal(url) { window.open(url, '_blank', 'noopener'); return Promise.resolve(); },
+    discovery: { state: desktopOnly, run: desktopOnly, addSource: desktopOnly, updateSource: desktopOnly, removeSource: desktopOnly, setFindingStatus: desktopOnly, onProgress: noop, onFinished: noop },
+    settings: { get: desktopOnly, set: desktopOnly, onChanged: noop },
+    ai: { status: desktopOnly, setKey: desktopOnly, testKey: desktopOnly },
+    draft: { generate: desktopOnly, onProgress: noop },
+    onNavigate: noop,
+    onRunDiscovery: noop,
+
     async getSession() {
       if (!savedAuth()) return null;
       try {
@@ -100,6 +113,18 @@
         input.addEventListener('cancel', () => resolve(null));
         input.click();
       });
+    },
+
+    saveFile(file) {
+      const url = URL.createObjectURL(new Blob([file.content], { type: 'text/html;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = file.name;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return Promise.resolve(file.name);
     },
 
     async save(payload) {

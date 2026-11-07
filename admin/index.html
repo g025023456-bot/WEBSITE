@@ -14,104 +14,247 @@
   <div id="dropOverlay" class="drop-overlay" hidden><div class="drop-box">⬇ שחררו כאן קובץ גיליון</div></div>
   <header class="titlebar">
     <div class="titlebar-brand">
-      <span class="brand-mark">ה<span>+</span></span>
+      <img class="brand-mark" src="/admin/mark.png" alt="" width="30" height="30">
       <span class="titlebar-name"><strong>הורה ומיוחד</strong><small>ניהול הניוזלטרים</small></span>
     </div>
     <div class="titlebar-actions">
       <span id="saveState" class="save-state"><span class="state-dot"></span> האתר מעודכן</span>
-      <button id="saveButton" class="button button-titlebar" disabled>שמירת שינויים</button>
+      <button id="saveButton" class="button button-titlebar" disabled title="פרסום כל השינויים לאתר החי">⬆ פרסום לאתר</button>
     </div>
   </header>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="side-label">ניהול האתר</div>
-      <div class="side-link active"><span class="side-icon">▤</span> גיליונות</div>
+      <button type="button" class="side-link active" data-view="issues"><span class="side-icon">▤</span> גיליונות</button>
+      <button type="button" class="side-link" data-view="updates" id="navUpdates" hidden><span class="side-icon">◎</span> עדכונים מהרשת <span id="updatesBadge" class="side-badge" hidden>0</span></button>
       <div class="sidebar-bottom">
         <div class="side-label">חיבור לאתר החי</div>
         <div id="connectionLabel" class="folder-label">לא מחובר</div>
         <button id="logoutButton" class="button button-outline button-wide" hidden>התנתקות</button>
-        <p class="side-hint">שמירה מפרסמת לאתר תוך דקה-שתיים.</p>
+        <p class="side-hint">פרסום מעלה את השינויים לאתר תוך דקה-שתיים.</p>
       </div>
     </aside>
 
     <main class="main">
-      <header class="topbar">
-        <div>
-          <div class="eyebrow">מרכז הבקרה</div>
-          <h1>הניוזלטרים שלך</h1>
-          <p class="top-subtitle">ניהול הארכיון, הסדר והתצוגה באתר</p>
-        </div>
-      </header>
+      <!-- ===== תצוגת הגיליונות ===== -->
+      <section id="viewIssues" class="view">
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">מרכז הבקרה</div>
+            <h1>הניוזלטרים שלך</h1>
+            <p class="top-subtitle">ניהול הארכיון, הסדר והתצוגה באתר</p>
+          </div>
+        </header>
 
-      <section id="welcome" class="welcome-card">
-        <div class="welcome-icon">▤</div>
-        <div class="connect-body">
-          <h2>התחברות</h2>
-          <p>מתחברים עם האימייל והסיסמה שקיבלתם, ומנהלים את הניוזלטרים של האתר.</p>
-          <form id="connectForm" class="connect-form">
-            <label for="emailInput">אימייל</label>
-            <input id="emailInput" type="email" dir="ltr" autocomplete="username" spellcheck="false" placeholder="name@ho-me.org.il">
-            <label for="passwordInput">סיסמה</label>
-            <input id="passwordInput" type="password" autocomplete="current-password">
-            <div id="connectError" class="form-error" role="alert"></div>
-            <button type="submit" id="connectButton" class="button button-primary">התחברות</button>
-          </form>
+        <section id="welcome" class="welcome-card">
+          <img class="welcome-mark" src="/admin/mark.png" alt="" width="56" height="56">
+          <div class="connect-body">
+            <h2>התחברות</h2>
+            <p>מתחברים עם האימייל והסיסמה שקיבלתם, ומנהלים את הניוזלטרים של האתר.</p>
+            <form id="connectForm" class="connect-form">
+              <label for="emailInput">אימייל</label>
+              <input id="emailInput" type="email" dir="ltr" autocomplete="username" spellcheck="false" placeholder="name@ho-me.org.il">
+              <label for="passwordInput">סיסמה</label>
+              <input id="passwordInput" type="password" autocomplete="current-password">
+              <div id="connectError" class="form-error" role="alert"></div>
+              <button type="submit" id="connectButton" class="button button-primary">התחברות</button>
+            </form>
+          </div>
+        </section>
+
+        <div id="workspace" class="workspace" hidden>
+          <section class="summary-row">
+            <article class="summary-card">
+              <div class="summary-icon purple">▤</div>
+              <div><span class="summary-label">גיליונות בארכיון</span><strong id="issueCount">0</strong></div>
+              <span class="summary-note">כל הגיליונות שפורסמו</span>
+            </article>
+            <article class="summary-card">
+              <div class="summary-icon teal">↗</div>
+              <div><span class="summary-label">הגיליון שמוצג ראשון</span><strong id="latestDate">·</strong></div>
+              <span class="summary-note">מופיע כגיליון האחרון</span>
+            </article>
+          </section>
+
+          <section class="content-grid">
+            <div class="panel issues-panel">
+              <div class="panel-heading">
+                <div><h2>כל הגיליונות</h2><p>הראשון ברשימה מוצג באתר כגיליון האחרון</p></div>
+                <button id="addButton" class="button button-primary"><span class="plus">＋</span> הוספת גיליון</button>
+              </div>
+              <section id="scheduledPanel" class="scheduled-panel" hidden>
+                <div class="scheduled-title">⏳ גיליונות עתידיים · ממתינים לפרסום</div>
+                <div id="scheduledList"></div>
+                <p class="scheduled-hint">ביום היעד יופיע כאן כפתור פרסום.</p>
+              </section>
+              <div class="search-row">
+                <span class="search-icon" aria-hidden="true">⌕</span>
+                <input id="searchInput" type="search" placeholder="חיפוש בגיליונות: מילה מהתוכן, כותרת או תאריך" aria-label="חיפוש גיליונות">
+                <span id="searchCount" class="search-count" hidden></span>
+              </div>
+              <div id="issueList" class="issue-list"></div>
+              <div id="noResults" class="no-results" hidden>לא נמצאו גיליונות שמתאימים לחיפוש.</div>
+              <div class="archive-note"><span>ⓘ</span><span>מחיקה מסירה את הגיליון מהאתר לצמיתות. אפשר גם לגרור לכאן קובץ גיליון חדש.</span></div>
+            </div>
+
+            <aside class="panel preview-panel">
+              <div class="preview-heading">
+                <div><h2>תצוגה מקדימה</h2><p id="previewCaption">בחרו גיליון מהרשימה</p></div>
+                <div class="device-toggle" role="group" aria-label="גודל התצוגה">
+                  <button type="button" id="deviceDesktop" class="device-button active" aria-pressed="true">🖥 מחשב</button>
+                  <button type="button" id="deviceMobile" class="device-button" aria-pressed="false">📱 נייד</button>
+                </div>
+              </div>
+              <div id="editToolbar" class="edit-toolbar" role="toolbar" aria-label="עיצוב טקסט" hidden>
+                <div class="tool-group">
+                  <button type="button" class="tool" data-cmd="undo" title="ביטול פעולה (Ctrl+Z)">↶</button>
+                  <button type="button" class="tool" data-cmd="redo" title="חזרה על פעולה (Ctrl+Y)">↷</button>
+                </div>
+                <div class="tool-group">
+                  <select id="toolSize" class="tool-select" title="גודל טקסט" aria-label="גודל טקסט">
+                    <option value="">גודל</option>
+                    <option value="12">קטן</option>
+                    <option value="15">רגיל</option>
+                    <option value="18">גדול</option>
+                    <option value="22">כותרת</option>
+                    <option value="26">כותרת גדולה</option>
+                  </select>
+                </div>
+                <div class="tool-group">
+                  <button type="button" class="tool tool-b" data-cmd="bold" data-state="bold" title="הדגשה (Ctrl+B)">B</button>
+                  <button type="button" class="tool tool-i" data-cmd="italic" data-state="italic" title="נטוי (Ctrl+I)">I</button>
+                  <button type="button" class="tool tool-u" data-cmd="underline" data-state="underline" title="קו תחתון (Ctrl+U)">U</button>
+                  <button type="button" class="tool tool-s" data-cmd="strikeThrough" data-state="strikeThrough" title="קו חוצה">S</button>
+                </div>
+                <div class="tool-group" aria-label="צבע טקסט">
+                  <button type="button" class="tool swatch" data-color="#333333" title="צבע רגיל" style="--swatch:#333333"></button>
+                  <button type="button" class="tool swatch" data-color="#562E8C" title="סגול" style="--swatch:#562E8C"></button>
+                  <button type="button" class="tool swatch" data-color="#EA6A4C" title="כתום (מודגש וגדול, לכותרות)" style="--swatch:#EA6A4C"></button>
+                  <button type="button" class="tool swatch swatch-mark" data-mark="#FFD455" title="מרקר צהוב" style="--swatch:#FFD455">A</button>
+                </div>
+                <div class="tool-group">
+                  <button type="button" class="tool" data-cmd="justifyRight" data-state="justifyRight" title="יישור לימין">⇶</button>
+                  <button type="button" class="tool" data-cmd="justifyCenter" data-state="justifyCenter" title="מרכוז">≡</button>
+                  <button type="button" class="tool" data-cmd="justifyLeft" data-state="justifyLeft" title="יישור לשמאל">⇇</button>
+                  <button type="button" class="tool" data-cmd="justifyFull" data-state="justifyFull" title="יישור לשני הצדדים">☰</button>
+                </div>
+                <div class="tool-group">
+                  <button type="button" class="tool" data-cmd="insertUnorderedList" data-state="insertUnorderedList" title="תבליטים">•≡</button>
+                  <button type="button" class="tool" data-cmd="insertOrderedList" data-state="insertOrderedList" title="רשימה ממוספרת">1.</button>
+                  <button type="button" class="tool" data-cmd="indent" title="הגדלת הזחה">⇤</button>
+                  <button type="button" class="tool" data-cmd="outdent" title="הקטנת הזחה">⇥</button>
+                </div>
+                <div class="tool-group">
+                  <button type="button" class="tool" data-cmd="link" title="הוספת קישור">🔗</button>
+                  <button type="button" class="tool" data-cmd="unlink" title="הסרת קישור">⛓</button>
+                  <button type="button" class="tool" data-cmd="removeFormat" title="ניקוי עיצוב">⌫</button>
+                </div>
+              </div>
+              <div id="previewDevice" class="preview-device">
+                <iframe id="previewFrame" title="תצוגה מקדימה של הניוזלטר" sandbox="allow-same-origin"></iframe>
+                <div id="previewEmpty" class="preview-empty">
+                  <span>▧</span>
+                  <strong>התצוגה תופיע כאן</strong>
+                  <small>בחרו גיליון קיים או העלו קובץ HTML חדש</small>
+                </div>
+              </div>
+              <div class="preview-buttons">
+                <button id="editTextButton" class="button button-primary" disabled>עריכת הטקסט</button>
+                <button id="editButton" class="button button-outline" disabled>עריכת פרטי הגיליון</button>
+                <button id="finishTextButton" class="button button-primary" hidden>סיום עריכה</button>
+                <button id="cancelTextButton" class="button button-outline" hidden>ביטול העריכה</button>
+              </div>
+              <button id="downloadEmailButton" class="button button-outline button-wide" disabled>⬇ הורדת HTML לרב מסר</button>
+            </aside>
+          </section>
         </div>
       </section>
 
-      <div id="workspace" class="workspace" hidden>
-        <section class="summary-row">
-          <article class="summary-card">
-            <div class="summary-icon purple">▤</div>
-            <div><span class="summary-label">גיליונות בארכיון</span><strong id="issueCount">0</strong></div>
-            <span class="summary-note">כל הגיליונות שפורסמו</span>
-          </article>
-          <article class="summary-card">
-            <div class="summary-icon teal">↗</div>
-            <div><span class="summary-label">הגיליון שמוצג ראשון</span><strong id="latestDate">·</strong></div>
-            <span class="summary-note">מופיע כגיליון האחרון</span>
-          </article>
+      <!-- ===== תצוגת העדכונים מהרשת (דסקטופ) ===== -->
+      <section id="viewUpdates" class="view" hidden>
+        <header class="topbar">
+          <div>
+            <div class="eyebrow">מנוע העדכונים</div>
+            <h1>עדכונים מהרשת</h1>
+            <p class="top-subtitle">סריקת אתרים רשמיים וארגוני סיוע, דירוג לפי חשיבות, וניסוח גיליון בלחיצה</p>
+          </div>
+          <div class="topbar-actions">
+            <button id="settingsButton" class="button button-outline">⚙ הגדרות מעקב ו-AI</button>
+            <button id="scanButton" class="button button-primary button-big">🔍 חיפוש עדכונים חדשים</button>
+          </div>
+        </header>
+
+        <section class="flow-steps" aria-label="שלבי העבודה">
+          <div class="flow-step active" id="flowStep1"><span class="flow-num">1</span><div><strong>חיפוש</strong><small>סורקים את המקורות ואת הרשת</small></div></div>
+          <div class="flow-arrow">←</div>
+          <div class="flow-step" id="flowStep2"><span class="flow-num">2</span><div><strong>ניסוח עם AI</strong><small>בוחרים עדכונים, ה-AI כותב ומעצב גיליון</small></div></div>
+          <div class="flow-arrow">←</div>
+          <div class="flow-step" id="flowStep3"><span class="flow-num">3</span><div><strong>פרסום לאתר</strong><small>בודקים את הטיוטה ומפרסמים</small></div></div>
         </section>
 
-        <section class="content-grid">
-          <div class="panel issues-panel">
-            <div class="panel-heading">
-              <div><h2>כל הגיליונות</h2><p>הראשון ברשימה מוצג באתר כגיליון האחרון</p></div>
-              <button id="addButton" class="button button-primary"><span class="plus">＋</span> הוספת גיליון</button>
-            </div>
-            <section id="scheduledPanel" class="scheduled-panel" hidden>
-              <div class="scheduled-title">⏳ גיליונות עתידיים · ממתינים לפרסום</div>
-              <div id="scheduledList"></div>
-              <p class="scheduled-hint">ביום היעד יופיע כאן כפתור פרסום.</p>
-            </section>
-            <div class="search-row">
-              <span class="search-icon" aria-hidden="true">⌕</span>
-              <input id="searchInput" type="search" placeholder="חיפוש בגיליונות: מילה מהתוכן, כותרת או תאריך" aria-label="חיפוש גיליונות">
-              <span id="searchCount" class="search-count" hidden></span>
-            </div>
-            <div id="issueList" class="issue-list"></div>
-            <div id="noResults" class="no-results" hidden>לא נמצאו גיליונות שמתאימים לחיפוש.</div>
-            <div class="archive-note"><span>ⓘ</span><span>מחיקה מסירה את הגיליון מהאתר לצמיתות. אפשר גם לגרור לכאן קובץ גיליון חדש.</span></div>
-          </div>
+        <div id="scanStatus" class="scan-status" hidden>
+          <span class="spinner"></span>
+          <span id="scanStatusText">מתחילים סריקה...</span>
+        </div>
 
-          <aside class="panel preview-panel">
-            <div class="preview-heading">
-              <div><h2>תצוגה מקדימה</h2><p id="previewCaption">בחרו גיליון מהרשימה</p></div>
-              <span class="preview-tag">תצוגת אתר</span>
-            </div>
-            <div class="preview-device">
-              <iframe id="previewFrame" title="תצוגה מקדימה של הניוזלטר" sandbox=""></iframe>
-              <div id="previewEmpty" class="preview-empty">
-                <span>▧</span>
-                <strong>התצוגה תופיע כאן</strong>
-                <small>בחרו גיליון קיים או העלו קובץ HTML חדש</small>
+        <section class="monitor-strip">
+          <label class="switch-row">
+            <input type="checkbox" id="monitorToggle">
+            <span class="switch"></span>
+            <span><strong>מעקב אוטומטי</strong> · בודק את המקורות ברקע ומתריע בהודעת Windows על חומר חשוב</span>
+          </label>
+          <span id="monitorInfo" class="monitor-info">עדיין לא נבדק</span>
+          <span id="aiChip" class="ai-chip">AI: בודק...</span>
+        </section>
+
+        <section class="content-grid updates-grid">
+          <div class="panel findings-panel">
+            <div class="panel-heading">
+              <div><h2>ממצאים</h2><p id="findingsCaption">סמנו את העדכונים שמהם ייכתב הגיליון</p></div>
+              <div class="filter-chips" role="group" aria-label="סינון">
+                <button type="button" class="chip active" data-filter="new">חדשים</button>
+                <button type="button" class="chip" data-filter="important">חשובים</button>
+                <button type="button" class="chip" data-filter="all">הכול</button>
               </div>
             </div>
-            <button id="editButton" class="button button-outline button-wide" disabled>עריכת פרטי הגיליון</button>
+            <div id="findingsList" class="findings-list"></div>
+            <div id="findingsEmpty" class="preview-empty static-empty">
+              <span>◎</span>
+              <strong>עדיין אין ממצאים</strong>
+              <small>לחצו "חיפוש עדכונים חדשים" כדי לסרוק את המקורות</small>
+            </div>
+          </div>
+
+          <aside class="panel sources-panel">
+            <div class="panel-heading">
+              <div><h2>המקורות במעקב</h2><p>אתרים ו-RSS שנבדקים בכל סריקה</p></div>
+            </div>
+            <div id="sourcesList" class="sources-list"></div>
+            <form id="sourceForm" class="source-form">
+              <label for="sourceName">הוספת מקור</label>
+              <input id="sourceName" type="text" placeholder="שם המקור (למשל: משרד הרווחה · חדשות)" maxlength="80">
+              <input id="sourceUrl" type="url" dir="ltr" placeholder="https://..." required>
+              <div id="sourceError" class="form-error" role="alert"></div>
+              <button type="submit" id="sourceAddButton" class="button button-outline button-wide">＋ הוספה ובדיקה</button>
+            </form>
+            <div class="archive-note"><span>ⓘ</span><span>אתרי gov.il נטענים בסקריפט ולא ניתנים לקריאה ישירה. הם מכוסים בחיפוש ה-AI ברשת, שרץ בכל סריקה ידנית (אפשר לכבות בהגדרות).</span></div>
           </aside>
         </section>
-      </div>
+
+        <div id="draftBar" class="draft-bar" hidden>
+          <div class="draft-bar-text"><strong id="draftCount">נבחרו 0 עדכונים</strong><small>ה-AI יקרא את המקורות, יכתוב גיליון לפי כללי התוכן, ויעצב אותו על התבנית של הגיליונות שפורסמו</small></div>
+          <input id="draftInstructions" type="text" placeholder="הנחיות לכותב (רשות): דגש, קהל, נושא..." maxlength="300">
+          <button id="draftButton" class="button button-primary button-big">✨ ניסוח גיליון עם AI</button>
+        </div>
+      </section>
     </main>
+  </div>
+
+  <!-- פס פרסום בולט: מופיע כשיש שינויים שעוד לא עלו לאתר -->
+  <div id="publishBar" class="publish-bar" hidden>
+    <div class="publish-bar-text"><strong>יש שינויים שעדיין לא פורסמו לאתר החי</strong><small id="publishBarDetail">הגיליונות באתר יתעדכנו רק אחרי לחיצה על פרסום</small></div>
+    <button id="discardButton" class="button button-outline">ביטול השינויים</button>
+    <button id="publishButton" class="button button-publish">⬆ פרסום השינויים לאתר החי</button>
   </div>
 
   <div id="editorBackdrop" class="modal-backdrop" hidden>
@@ -123,11 +266,15 @@
       <form id="issueForm">
         <label for="issueDate">תאריך פרסום</label>
         <input id="issueDate" name="date" type="date" required>
-        <small class="field-hint">התאריך בארכיון ובשם הקובץ. תוכן ה-HTML עצמו נשאר כפי שהועלה.</small>
+        <small class="field-hint" id="dateHint">התאריך בארכיון ובשם הקובץ. תוכן ה-HTML עצמו נשאר כפי שהועלה.</small>
         <label for="issueTitle">כותרת</label>
         <input id="issueTitle" name="title" type="text" maxlength="160" required>
         <label for="issueSub">תיאור קצר</label>
         <textarea id="issueSub" name="sub" rows="3" maxlength="300"></textarea>
+        <div id="draftNotes" class="draft-notes" hidden>
+          <strong>לאימות לפני הפרסום (הערות הכותב):</strong>
+          <ul id="draftNotesList"></ul>
+        </div>
         <label class="check-row" id="scheduleRow" hidden>
           <input type="checkbox" id="scheduleCheck">
           <span>גיליון עתידי: לשמור בהמתנה ולפרסם לאתר רק בתאריך שנבחר</span>
@@ -135,9 +282,71 @@
         <div id="editorError" class="form-error" role="alert"></div>
         <div class="modal-actions">
           <button type="button" id="cancelEditorButton" class="button button-outline">ביטול</button>
-          <button type="submit" class="button button-primary">שמירת פרטים</button>
+          <button type="submit" id="editorSubmit" class="button button-primary">שמירת פרטים</button>
         </div>
       </form>
+    </section>
+  </div>
+
+  <div id="draftBackdrop" class="modal-backdrop" hidden>
+    <section class="editor-modal draft-modal" role="dialog" aria-modal="true" aria-labelledby="draftTitle">
+      <div class="modal-heading">
+        <div><span class="eyebrow">ניסוח עם AI</span><h2 id="draftTitle">כותבים את הגיליון...</h2></div>
+      </div>
+      <ol class="draft-steps">
+        <li id="draftStepRead"><span class="step-dot"></span><span>קריאת המקורות שנבחרו</span><small id="draftStepReadDetail"></small></li>
+        <li id="draftStepWrite"><span class="step-dot"></span><span>כתיבה לפי כללי התוכן: בלי סכומים, בלי תאריכים, ניסוח זהיר</span></li>
+        <li id="draftStepRender"><span class="step-dot"></span><span>עיצוב על תבנית הגיליונות שפורסמו ובדיקות טכניות</span></li>
+      </ol>
+      <div id="draftResult" class="draft-result" hidden></div>
+      <div class="modal-actions">
+        <button type="button" id="draftCloseButton" class="button button-outline" hidden>סגירה</button>
+        <button type="button" id="draftOpenButton" class="button button-primary" hidden>פתיחת הטיוטה לבדיקה ולפרסום</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="settingsBackdrop" class="modal-backdrop" hidden>
+    <section class="editor-modal settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-heading">
+        <div><span class="eyebrow">עדכונים מהרשת</span><h2 id="settingsTitle">הגדרות מעקב ו-AI</h2></div>
+        <button id="closeSettingsButton" class="icon-button" aria-label="סגירה">×</button>
+      </div>
+      <div class="settings-section">
+        <h3>מפתח AI (Anthropic)</h3>
+        <p class="settings-hint" id="aiKeyHint">המפתח נשמר מוצפן במחשב הזה בלבד. אם מנהל האתר הגדיר מפתח ב-Vercel, הוא נטען אוטומטית למשתמש מחובר.</p>
+        <div class="key-row">
+          <input id="aiKeyInput" type="password" dir="ltr" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+          <button type="button" id="aiKeyTestButton" class="button button-outline">בדיקה</button>
+          <button type="button" id="aiKeySaveButton" class="button button-primary">שמירה</button>
+        </div>
+        <div id="aiKeyStatus" class="form-error"></div>
+      </div>
+      <div class="settings-section">
+        <h3>מעקב אוטומטי</h3>
+        <label class="check-row"><input type="checkbox" id="settingMonitor"><span>לבדוק את המקורות ברקע ולהתריע על חומר חשוב</span></label>
+        <label class="inline-field">תדירות הבדיקה
+          <select id="settingInterval">
+            <option value="1">כל שעה</option>
+            <option value="3">כל 3 שעות</option>
+            <option value="6">כל 6 שעות</option>
+            <option value="12">כל 12 שעות</option>
+            <option value="24">פעם ביום</option>
+          </select>
+        </label>
+        <label class="check-row"><input type="checkbox" id="settingNotify"><span>הודעה קופצת ב-Windows כשנמצא עדכון חשוב</span></label>
+        <label class="check-row"><input type="checkbox" id="settingAutoWebSearch"><span>לכלול גם חיפוש AI ברשת בבדיקות האוטומטיות (עולה יותר)</span></label>
+        <label class="check-row"><input type="checkbox" id="settingManualWebSearch"><span>לכלול חיפוש AI ברשת בלחיצה על "חיפוש עדכונים חדשים"</span></label>
+      </div>
+      <div class="settings-section">
+        <h3>Windows</h3>
+        <label class="check-row"><input type="checkbox" id="settingStartup"><span>להפעיל את האפליקציה ברקע עם ההדלקה של המחשב</span></label>
+        <label class="check-row"><input type="checkbox" id="settingTray"><span>כשסוגרים את החלון והמעקב פעיל, להמשיך לרוץ באזור ההתראות</span></label>
+      </div>
+      <div id="settingsError" class="form-error" role="alert"></div>
+      <div class="modal-actions">
+        <button type="button" id="settingsDoneButton" class="button button-primary">סגירה</button>
+      </div>
     </section>
   </div>
 
