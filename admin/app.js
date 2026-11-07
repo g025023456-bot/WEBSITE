@@ -1518,6 +1518,8 @@ function renderReviewBanner(issue) {
   const draft = issue.draftId ? state.drafts.find(item => item.id === issue.draftId) : null;
   const notes = draft && draft.notes ? draft.notes : [];
   elements.reviewNotes.hidden = !notes.length;
+  elements.reviewNotes.open = false;
+  $('reviewNotesSummary').textContent = `לאימות לפני הפרסום (${notes.length} נקודות מהכותב)`;
   elements.reviewNotesList.replaceChildren(...notes.map(note => {
     const item = document.createElement('li');
     item.textContent = note;
@@ -1640,6 +1642,8 @@ function previewDraft(draft) {
   elements.reviewBanner.hidden = false;
   elements.reviewText.textContent = draft.status === 'draft' ? 'טיוטה שמורה. "לבדיקה ולפרסום" מוסיף אותה לרשימת הגיליונות.' : `טיוטה במצב: ${draftStatusLabel(draft.status)}.`;
   elements.reviewNotes.hidden = !(draft.notes && draft.notes.length);
+  elements.reviewNotes.open = false;
+  $('reviewNotesSummary').textContent = `לאימות לפני הפרסום (${(draft.notes || []).length} נקודות מהכותב)`;
   elements.reviewNotesList.replaceChildren(...(draft.notes || []).map(note => { const li = document.createElement('li'); li.textContent = note; return li; }));
 }
 

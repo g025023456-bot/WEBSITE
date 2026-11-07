@@ -525,7 +525,8 @@ h1 { margin-bottom: 2px; font-size: 28px; line-height: 1.3; letter-spacing: -.01
 .review-steps .sep { color: #c9b981; }
 .review-text { font-weight: 600; }
 .review-notes { margin-top: 6px; font-size: 12px; }
-.review-notes ul { margin: 2px 0 0; padding-right: 16px; }
+.review-notes summary { cursor: pointer; font-weight: 700; color: #7a5a00; }
+.review-notes ul { margin: 4px 0 0; padding-right: 16px; max-height: 180px; overflow: auto; }
 .drafts-panel {
   margin: 14px 0 4px; padding: 14px 16px; border: 1px solid #ddd0ec; border-radius: var(--radius-md);
   background: linear-gradient(180deg, #fdfbff, #f6f1fb);
