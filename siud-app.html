@@ -835,6 +835,8 @@
 
     const adlLbl = {level6:'תלות מלאה (רמה 6)',level5:'תלות חמורה (5)',level4:'תלות חמורה (4)',level3:'תלות בינונית (3)',level2:'תלות בינונית (2)',level1:'תלות קלה (1)',none:'עצמאי'};
     const summary = `היי, סיימתי בודק זכאות סיעוד.%0Aגיל: ${a.age}%0Aמגדר: ${a.gender==='male'?'זכר':'נקבה'}%0Aרמת תלות: ${adlLbl[a.adl]||'-'}%0Aזכויות שנמצאו: ${high.length} גבוה / ${medium.length} בינוני.%0Aהערכת שווי כספי: ~${fmt(totalMonthly)} ₪/חודש (≈ ${fmt(totalAnnual)} ₪/שנה).%0Aמבקש/ת ליווי מקצועי.`;
+    // סיכום התשובות נכנס לתיק בארגונית (source_details) דרך lead-popup.js
+    window.LEAD_CONTEXT = summary.replace(/%0A/g, '\n');
     const wa = `https://api.whatsapp.com/send?phone=97225023456&text=${summary}`;
 
     app.innerHTML = `
@@ -926,8 +928,7 @@
         השימוש בכלי <strong>אינו מהווה ייעוץ משפטי, רפואי, סוציאלי או מקצועי</strong>, אינו יוצר יחסי לקוח-נותן שירות, ואינו תחליף לייעוץ פרטני. החברה, בעליה ומפעיליה <strong>לא יישאו באחריות</strong> לכל נזק ישיר או עקיף שייגרם משימוש או הסתמכות על המידע — לרבות אי-קבלת זכאות, פספוס מועד הגשה או החלטות הגופים המוסמכים. אנו ממליצים לאמת מידע מול המוסד לביטוח לאומי (8809*) ו-btl.gov.il, ולהיוועץ עם איש מקצוע.
       </div>`;
 
-    // לידים מטופלים דרך window.LEAD_URL (מוגדר בסוף הקובץ). הוואטסאפ נבנה ישירות עם summary.
-    document.querySelectorAll('a[href="#lead"]').forEach(a => { if(window.LEAD_URL) a.href = window.LEAD_URL; });
+    // קישורי #lead נתפסים ע"י lead-popup.js. הוואטסאפ נבנה ישירות עם summary.
     window.showLegal = function(key){ document.getElementById('legalModal').style.display='flex'; document.getElementById('legalTitle').textContent = key==='takanon'?'תקנון':key==='privacy'?'מדיניות פרטיות':'הצהרת נגישות'; document.getElementById('legalBody').innerHTML = window.LEGAL_TEXTS[key]; };
 
     document.getElementById('restartBtn').addEventListener('click', () => {
@@ -1039,13 +1040,6 @@ window.LEGAL_TEXTS = {
 })();
 </script>
 
-<!-- ============== מרכז קישורי "השארת פרטים" ============== -->
-<!-- כל קישור עם href="#lead" באתר יעודכן אוטומטית ל-LEAD_URL.
-     כשתצא מערכת ה-CRM החדשה — מחליפים רק את השורה הזו ומפעילים בכל האתר. -->
-<script>
-  window.LEAD_URL = "https://cloud.kaveret.biz/contact-forms/9452/%D7%93%D7%A3%20%D7%A0%D7%97%D7%99%D7%AA%D7%94%20%D7%94%D7%95%D7%A8%D7%94%20%D7%95%D7%9E%D7%99%D7%95%D7%97%D7%93"; // TODO: להחליף ל-URL של ה-CRM החדש
-  document.querySelectorAll('a[href="#lead"]').forEach(a => { a.href = window.LEAD_URL; });
-</script>
 <script src="lead-popup.js"></script>
 </body>
 </html>

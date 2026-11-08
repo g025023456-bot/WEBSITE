@@ -876,6 +876,8 @@
       medical:'מצב רפואי', mental:'מצב נפשי', multiple:'לקויות משולבות'
     };
     const summary = `היי, סיימתי את בודק הזכאות לבוגרים.%0Aסוג לקות: ${disabilityLabels[a.disability]||'-'}%0Aגיל: ${a.age}%0Aזכויות שנמצאו: ${high.length} גבוהה / ${medium.length} בינונית.%0Aהערכת שווי כספי: ~${fmt(totalMonthly)} ₪/חודש (≈ ${fmt(totalAnnual)} ₪/שנה).%0Aמבקש/ת ליווי מקצועי.`;
+    // סיכום התשובות נכנס לתיק בארגונית (source_details) דרך lead-popup.js
+    window.LEAD_CONTEXT = summary.replace(/%0A/g, '\n');
     const wa = `https://api.whatsapp.com/send?phone=97225023456&text=${summary}`;
 
     app.innerHTML = `
@@ -978,8 +980,7 @@
 
       <p class="disclaimer">🔒 הבדיקה אנונימית · התוצאות לא נשמרו · הסכומים עדכניים ל-1.1.2026</p>`;
 
-    // לידים מטופלים דרך window.LEAD_URL (מוגדר בסוף הקובץ). הוואטסאפ נבנה ישירות עם summary.
-    document.querySelectorAll('a[href="#lead"]').forEach(a => { if(window.LEAD_URL) a.href = window.LEAD_URL; });
+    // קישורי #lead נתפסים ע"י lead-popup.js. הוואטסאפ נבנה ישירות עם summary.
     window.showLegal = function(key){ document.getElementById('legalModal').style.display='flex'; document.getElementById('legalTitle').textContent = key==='takanon'?'תקנון':key==='privacy'?'מדיניות פרטיות':'הצהרת נגישות'; document.getElementById('legalBody').innerHTML = window.LEGAL_TEXTS[key]; };
 
     document.getElementById('restartBtn').addEventListener('click', () => {
@@ -1083,13 +1084,6 @@ window.LEGAL_TEXTS = {
 })();
 </script>
 
-<!-- ============== מרכז קישורי "השארת פרטים" ============== -->
-<!-- כל קישור עם href="#lead" באתר יעודכן אוטומטית ל-LEAD_URL.
-     כשתצא מערכת ה-CRM החדשה — מחליפים רק את השורה הזו ומפעילים בכל האתר. -->
-<script>
-  window.LEAD_URL = "https://cloud.kaveret.biz/contact-forms/9452/%D7%93%D7%A3%20%D7%A0%D7%97%D7%99%D7%AA%D7%94%20%D7%94%D7%95%D7%A8%D7%94%20%D7%95%D7%9E%D7%99%D7%95%D7%97%D7%93"; // TODO: להחליף ל-URL של ה-CRM החדש
-  document.querySelectorAll('a[href="#lead"]').forEach(a => { a.href = window.LEAD_URL; });
-</script>
 <script src="lead-popup.js"></script>
 </body>
 </html>

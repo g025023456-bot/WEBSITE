@@ -1158,7 +1158,7 @@
 .signup{background:var(--p);border-radius:14px;padding:28px 26px;margin-bottom:22px;text-align:center}
 .signup h2{margin:0 0 6px;font-size:21px;color:#fff}
 .signup-sub{margin:0 0 18px;font-size:14px;color:rgba(255,255,255,.82)}
-.signup-form{max-width:520px;margin:0 auto}
+.signup-form{max-width:520px;margin:0 auto;position:relative}
 .signup-row{display:flex;gap:10px;margin-bottom:12px}
 .signup-row input{flex:1;min-width:0;border:none;border-radius:12px;padding:13px 16px;
   font-size:15px;font-family:inherit;background:#fff;color:#333}
@@ -1276,6 +1276,8 @@
             <input type="text"  name="news-name"  placeholder="שם מלא" data-ph-he="שם מלא" data-ph-en="Full name" required autocomplete="name" aria-label="שם מלא" data-aria-he="שם מלא" data-aria-en="Full name">
             <input type="email" name="news-email" placeholder="כתובת המייל שלכם" data-ph-he="כתובת המייל שלכם" data-ph-en="Your email address" required autocomplete="email" inputmode="email" aria-label="כתובת מייל לניוזלטר" data-aria-he="כתובת מייל לניוזלטר" data-aria-en="Email for newsletter">
           </div>
+          <!-- מלכודת בוטים: מוסתר ב-clip (לא display:none ולא left:-9999px — האתר RTL) -->
+          <input type="text" name="hp_check" tabindex="-1" aria-hidden="true" autocomplete="off" style="position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap">
           <label class="signup-consent">
             <input type="checkbox" name="news-consent" required>
             <span><span class="lang-he">אני מאשר/ת קבלת הניוזלטר ועדכונים במייל מ"הורה ומיוחד", ומבין/ה שאוכל להסיר את עצמי בכל עת. *</span><span class="lang-en">I agree to receive the newsletter and updates by email from Horeh uMeyuhad, and understand I can unsubscribe at any time. *</span></span>
@@ -1337,7 +1339,10 @@
         var form=e.target, ok=document.getElementById('newsOk');
         var nm=(form.querySelector('[name="news-name"]')||{}).value||'';
         var em=(form.querySelector('[name="news-email"]')||{}).value||'';
-        sendToGForm({type:'הרשמה לניוזלטר', name:nm, email:em, consent:'כן'});
+        var hp=(form.querySelector('[name="hp_check"]')||{}).value||'';
+        // בוט: שדה המלכודת מולא, או "שם" שהוא מחרוזת לטינית ארוכה — הצלחה ובלי שליחה
+        var isBot=!!hp || /^[A-Za-z]{12,}$/.test(nm.trim());
+        if(!isBot) sendToGForm({type:'הרשמה לניוזלטר', name:nm, email:em, consent:'כן'});
         form.style.display='none';
         if(ok) ok.style.display='block';
         return false;
@@ -1486,7 +1491,10 @@ function handleNewsletter(e){
   var form=e.target, ok=document.getElementById('newsOk');
   var nm=(form.querySelector('[name="news-name"]')||{}).value||'';
   var em=(form.querySelector('[name="news-email"]')||{}).value||'';
-  sendToGForm({type:'הרשמה לניוזלטר', name:nm, email:em, consent:'כן'});
+  var hp=(form.querySelector('[name="hp_check"]')||{}).value||'';
+  // בוט: שדה המלכודת מולא, או "שם" שהוא מחרוזת לטינית ארוכה — הצלחה ובלי שליחה
+  var isBot=!!hp || /^[A-Za-z]{12,}$/.test(nm.trim());
+  if(!isBot) sendToGForm({type:'הרשמה לניוזלטר', name:nm, email:em, consent:'כן'});
   form.style.display='none';
   if(ok) ok.style.display='block';
   return false;
@@ -1780,13 +1788,6 @@ window.LEGAL_TEXTS = {
 })();
 </script>
 
-<!-- ============== מרכז קישורי "השארת פרטים" ============== -->
-<!-- כל קישור עם href="#lead" באתר יעודכן אוטומטית ל-LEAD_URL.
-     כשתצא מערכת ה-CRM החדשה — מחליפים רק את השורה הזו ומפעילים בכל האתר. -->
-<script>
-  window.LEAD_URL = "https://cloud.kaveret.biz/contact-forms/9452/%D7%93%D7%A3%20%D7%A0%D7%97%D7%99%D7%AA%D7%94%20%D7%94%D7%95%D7%A8%D7%94%20%D7%95%D7%9E%D7%99%D7%95%D7%97%D7%93"; // TODO: להחליף ל-URL של ה-CRM החדש
-  document.querySelectorAll('a[href="#lead"]').forEach(a => { a.href = window.LEAD_URL; });
-</script>
 
 
 <script>

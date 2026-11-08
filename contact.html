@@ -863,6 +863,7 @@
   .cc-note{font-size:.7rem;color:var(--ink-soft);margin-top:10px}
 
   .contact-form{
+    position:relative;
     background:var(--white);border-radius:var(--radius-lg);
     padding:clamp(24px,3vw,36px);
     border:1px solid var(--line);
@@ -888,6 +889,16 @@
     outline:none;border-color:var(--brand-purple);background:#fff;
   }
   .field textarea{min-height:110px;resize:vertical}
+  .topic-field{border:0;padding:0;margin:0;min-width:0}
+  .topic-field legend{font-size:.85rem;font-weight:600;color:var(--ink-soft);padding:0;margin-bottom:6px}
+  .topic-opts{display:flex;flex-wrap:wrap;gap:10px}
+  .topic-opt{display:flex;align-items:center;gap:8px;padding:10px 14px;border:1.5px solid rgba(86,46,140,.18);border-radius:12px;background:#FAFAFA;cursor:pointer;font-size:.92rem;color:var(--ink);flex:1 1 160px}
+  .topic-opt:has(input:checked){border-color:var(--brand-purple);background:#fff}
+  .topic-opt input{width:16px;height:16px;accent-color:var(--brand-purple);flex-shrink:0}
+  .hp-field{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+  .field-err{display:none;color:#C62828;font-size:.85rem;margin-top:6px}
+  .field-err.show{display:block}
+  .field input.invalid{border-color:#C62828;background:#FFF5F5}
 
   /* ============================================
      FOOTER (matches prospectus back cover)
@@ -1276,11 +1287,22 @@
             <label for="email"><span class="lang-he">אימייל</span><span class="lang-en">Email</span></label>
             <input id="email" name="email" type="email" autocomplete="email" inputmode="email">
           </div>
+          <!-- פיצול הפניות: פעילות העמותה → קובץ "פניות עמותה וניוזלטר"; מימוש זכויות → תיק בארגונית -->
+          <fieldset class="field topic-field">
+            <legend><span class="lang-he">במה מדובר? *</span><span class="lang-en">What is this about? *</span></legend>
+            <div class="topic-opts">
+              <label class="topic-opt"><input type="radio" name="topic" value="amuta" required><span><span class="lang-he">פעילות העמותה</span><span class="lang-en">Association activity</span></span></label>
+              <label class="topic-opt"><input type="radio" name="topic" value="rights" required><span><span class="lang-he">מימוש זכויות</span><span class="lang-en">Claiming rights</span></span></label>
+            </div>
+          </fieldset>
           <div class="field">
             <label for="message"><span class="lang-he">במה נוכל לעזור? *</span><span class="lang-en">How can we help? *</span></label>
             <textarea id="message" name="message" required></textarea>
           </div>
+          <!-- מלכודת בוטים: מוסתר ב-clip (לא display:none ולא left:-9999px — האתר RTL) -->
+          <input class="hp-field" type="text" name="hp_check" id="hp_check" tabindex="-1" aria-hidden="true" autocomplete="off">
         </div>
+        <div class="field-err" id="phoneErr" role="alert"><span class="lang-he">מספר טלפון לא תקין</span><span class="lang-en">Invalid phone number</span></div>
         <label class="contact-consent">
           <input type="checkbox" id="consent" name="consent" required>
           <span><span class="lang-en">I agree to receive updates from Horeh uMeyuhad by email and messages, and understand I can unsubscribe at any time, per the </span><span class="lang-he">אני מאשר/ת קבלת עדכונים ותוכן שיווקי במייל ובהודעות מ"הורה ומיוחד", ומבין/ה שאוכל להסיר את עצמי בכל עת, בהתאם ל</span><a href="#legal-privacy" onclick="return openLegal('privacy')"><span class="lang-he">מדיניות הפרטיות</span><span class="lang-en">Privacy Policy</span></a>. *</span>
@@ -1542,11 +1564,28 @@ function handleNewsletter(e){
     var name = val('name'), phone = val('phone'), email = val('email'), message = val('message');
     var consentEl = document.getElementById('consent');
     var consent = (consentEl && consentEl.checked) ? 'כן' : '';
+    var topicEl = form.querySelector('input[name="topic"]:checked');
+    var topic = topicEl ? topicEl.value : 'amuta';
+    var phoneEl = document.getElementById('phone'), phoneErr = document.getElementById('phoneErr');
 
-    // שליחה שקטה לגוגל-פורמס (כלי איסוף הנתונים, כולל אישור הדיוור)
-    if(typeof sendToGForm==='function') sendToGForm({type:'פנייה מהאתר', name:name, phone:phone, email:email, message:message, consent:consent});
+    // בוט: שדה המלכודת מולא, או "שם" שהוא מחרוזת לטינית ארוכה — הצלחה ובלי שליחה
+    var isBot = !!val('hp_check') || /^[A-Za-z]{12,}$/.test(name);
 
-    // הודעת הצלחה
+    if(!isBot && topic === 'rights'){
+      // מימוש זכויות → תיק בארגונית (lead-popup.js). הטלפון נבדק כמו בשרת.
+      var normalized = (typeof window.normalizeLeadPhone==='function') ? window.normalizeLeadPhone(phone) : phone;
+      if(!normalized){
+        if(phoneErr) phoneErr.classList.add('show');
+        if(phoneEl){ phoneEl.classList.add('invalid'); phoneEl.focus(); phoneEl.addEventListener('input', function(){ phoneEl.classList.remove('invalid'); if(phoneErr) phoneErr.classList.remove('show'); }, {once:true}); }
+        return;
+      }
+      if(typeof window.sendRightsLead==='function') window.sendRightsLead({name:name, phone:normalized, email:email, message:message, consent:!!consent});
+    } else if(!isBot){
+      // פעילות העמותה → קובץ "פניות עמותה וניוזלטר" (כלי איסוף הנתונים, כולל אישור הדיוור)
+      if(typeof sendToGForm==='function') sendToGForm({type:'פנייה מהאתר', name:name, phone:phone, email:email, message:message, consent:consent});
+    }
+
+    // הודעת הצלחה — מופיעה מיד, לא מחכה לתשובה
     form.innerHTML = '<div style="text-align:center;padding:40px 16px">'
       + '<div style="font-size:3rem;margin-bottom:12px">✅</div>'
       + '<h3 style="color:var(--brand-purple);margin-bottom:10px">הפנייה התקבלה בהצלחה!</h3>'
@@ -1757,13 +1796,8 @@ window.LEGAL_TEXTS = {
 })();
 </script>
 
-<!-- ============== מרכז קישורי "השארת פרטים" ============== -->
-<!-- כל קישור עם href="#lead" באתר יעודכן אוטומטית ל-LEAD_URL.
-     כשתצא מערכת ה-CRM החדשה — מחליפים רק את השורה הזו ומפעילים בכל האתר. -->
-<script>
-  window.LEAD_URL = "https://cloud.kaveret.biz/contact-forms/9452/%D7%93%D7%A3%20%D7%A0%D7%97%D7%99%D7%AA%D7%94%20%D7%94%D7%95%D7%A8%D7%94%20%D7%95%D7%9E%D7%99%D7%95%D7%97%D7%93"; // TODO: להחליף ל-URL של ה-CRM החדש
-  document.querySelectorAll('a[href="#lead"]').forEach(a => { a.href = window.LEAD_URL; });
-</script>
+<!-- חלון השארת פרטים (קישורי #lead) + sendRightsLead לטופס "מימוש זכויות" -->
+<script src="lead-popup.js"></script>
 
 
 <script>
